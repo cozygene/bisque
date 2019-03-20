@@ -110,8 +110,8 @@ Deconvolute <- function(sc, bulk.data) {
   ref.data <- GenerateSCReference(sc)[overlapping.genes,]
   sc.props <- CalculateCellProportions(sc)
   Y.train <- (ref.data %*% sc.props)[,overlapping.samples]
-  X.train <- bulk@data[overlapping.genes,overlapping.samples]
-  X.pred <- bulk@data[overlapping.genes,remaining.samples]
+  X.train <- bulk.data[overlapping.genes,overlapping.samples]
+  X.pred <- bulk.data[overlapping.genes,remaining.samples]
   template <- numeric(length(remaining.samples))
   names(template) <- remaining.samples
   Y.pred <- vapply(X=overlapping.genes, FUN=TransformBulk,
