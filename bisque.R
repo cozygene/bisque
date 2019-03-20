@@ -1,10 +1,60 @@
-LoadSeuratObject <- function(obj, markers, delimiter="-", position=2) {
+bisque.sc <- setClass(
+  "bisque.sc",
+  slots=c(
+    data = "ANY",
+    cell.labels = "factor",
+    individual.ids = "factor"
+  )
+)
+
+CreateBisqueSCObject <- function(sc.data, cell.type.factor, individual.factor){
+  bisque.sc.object <- new(Class = "bisque.sc",
+                          data = sc.data,
+                          cell.labels = cell.type.factor,
+                          individual.ids = individual.factor)
+  return(bisque.sc.object)
+}
+
+LoadFromCSV <- function(sc.csv, cell.csv, markers.txt, delimiter="-",
+                        position=2, sparse=TRUE) {
+  # Load single-cell info from csv files for deconvolution
+  #
+  # Args:
+  #   sc.csv: Path to csv with single-cell data (genes as rows)
+  #   cell.csv: Path to csv with cell ID as first column and cell-type as
+  #             second column
+  #   markers.txt: Path to file with 1 marker gene per line, no header
+  sc.data <- as.matrix(read.csv(sc.csv, header=TRUE,
+                                check.names=FALSE, row.names=1))
+  if (sparse){
+    sc.col.names <- col.names(sc.data)
+    sc.row.names <- row.names(sc.data)
+    sc.data <- as(sc.data, "dgTMatrix")
+    col.names(sc.data) <- sc.col.names
+    row.names(sc.data) <- sc.row.names
+  }
+  cell.table <- read.csv(cell.csv, header=TRUE, check.names=FALSE, row.names=1)
+  cell.labels <- factor(cell.table[,1])
+  names(cell.labels) <- row.names(cell.table)
+  individual.ids <- sapply(strsplit(names(cell.labels), delimiter),
+                           `[[`, position)
+  names(individual.ids) <- names(cell.labels)
+  markers <- unique(scan(markers.txt, what = character()))
+  genes <- intersect(row.names(sc.data), markers)
+  bisque.sc.object <- new(Class="bisque.sc",
+                          data = sc.data[genes,names(cell.labels)],
+                          cell.labels = cell.labels,
+                          individual.ids = individual.ids)
+  return(bisque.sc.object)
+}
+
+LoadFromSeurat <- function(seurat.object, markers, delimiter="-", position=2) {
   # Extracts data from seurat object for deconvolution
   #
   # Note that only cells with labels are used.
   #
   # Args:
-  #   obj: Seurat object with raw.data (dgTMatrix) and ident
+  #   seurat.object: Seurat object with raw.data (dgTMatrix) and ident
   #        (from Seurat::FindClusters)
   #   markers: Object returned by Seurat::FindAllMarkers
   #   delimiter: Character to split cell.names with
@@ -16,14 +66,15 @@ LoadSeuratObject <- function(obj, markers, delimiter="-", position=2) {
   #   sc@markers: Marker genes for all cell types
   #   sc@cells.labels: Cell type label for all cells
   #   sc@individual.ids: Sample label for all cells
-  individual.ids <- sapply(strsplit(obj@cell.names, delimiter), `[[`, position)
-  names(individual.ids) <- obj@cell.names
+  individual.ids <- sapply(strsplit(seurat.object@cell.names, delimiter), `[[`, position)
+  names(individual.ids) <- seurat.object@cell.names
   individual.ids <- factor(individual.ids)
-  sc <- list("data" = obj@raw.data[,names(obj@ident)],
-             "markers" = unique(unlist(markers)),
-             "cell.labels" = obj@ident,
-             "individual.ids" = individual.ids)
-  return(sc)
+  genes <- intersect(row.names(seurat.object@raw.data), unique(unlist(markers)))
+  bisque.sc.object <- new(Class="bisque.sc",
+                          data = seurat.object@raw.data[genes,names(seurat.object@ident)],
+                          cell.labels = seurat.object@ident,
+                          individual.ids = individual.ids)
+  return(bisque.sc.object)
 }
 
 GetOverlappingSamples <- function(sc, bulk.data) {
@@ -49,12 +100,16 @@ GetOverlappingGenes <- function(sc, bulk.data) {
 }
 
 CountsToCPM <- function(counts, sparse=FALSE) {
-  # Returns input matrix (sparse indicated by boolean argument) converted to CPM
-  if (sparse) {
+  # Returns input matrix (dgTMatrix or base::matrix) converted to CPM
+  count_class <- class(counts)
+  if (count_class == "dgTMatrix") {
     counts@x <- (counts@x / colSums(counts)[counts@j + 1L]) * 1000000 
   }
-  else {
+  else if (count_class == "matrix") {
     counts <- sweep(counts, 2, colSums(counts), `/`) * 1000000
+  }
+  else {
+    stop("Input matrix not base::matrix or dgTMatrix")
   }
   return(counts)
 }
@@ -102,6 +157,9 @@ TransformBulk <- function(gene, Y.train, X.train, X.pred) {
 
 Deconvolute <- function(sc, bulk.data) {
   # Deconvolute bulk.data using the input sc class.
+  if (class(sc) != "bisque.sc") {
+    stop("Single-cell argument should be bisque.sc object")
+  }
   overlapping.samples <- GetOverlappingSamples(sc, bulk.data)
   remaining.samples <- setdiff(colnames(bulk.data), overlapping.samples)
   overlapping.genes <- GetOverlappingGenes(sc, bulk.data)
