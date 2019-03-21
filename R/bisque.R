@@ -7,6 +7,14 @@ bisque.sc <- setClass(
   )
 )
 
+`[.bisque.sc` <- function(x, i){
+  index <- x@individual.ids %in% i
+  bisque.sc.object <- CreateBisqueSCObject(x@data[,index],
+                                           droplevels(x@cell.labels[index]),
+                                           droplevels(x@individual.ids[index]))
+  return(bisque.sc.object)
+}
+
 CreateBisqueSCObject <- function(sc.data, cell.type.factor, individual.factor){
   bisque.sc.object <- new(Class = "bisque.sc",
                           data = sc.data,
@@ -89,10 +97,10 @@ GetOverlappingSamples <- function(sc, bulk.data) {
 }
 
 GetOverlappingGenes <- function(sc, bulk.data) {
-  #Returns vector of genes found in markers, single-cell data, and bulk data
+  #Returns vector of genes found in single-cell and bulk data
   bulk.genes <- rownames(bulk.data)
   sc.genes <- rownames(sc@data)
-  overlapping.genes <- intersect(bulk.genes, intersect(sc@markers, sc.genes))
+  overlapping.genes <- intersect(bulk.genes, sc.genes)
   if (length(overlapping.genes) == 0) {
     stop("No overlapping genes found between bulk and single-cell markers.")
   }
@@ -149,7 +157,7 @@ TransformBulk <- function(gene, Y.train, X.train, X.pred) {
                          center=X.center,
                          scale=X.scale)
   coeff <- as.numeric(coefficients(lm(Y.train.scaled ~ X.train.scaled +0)))
-  Y.pred.scaled <- X.scaled * coeff
+  Y.pred.scaled <- X.pred.scaled * coeff
   Y.pred <- matrix((Y.pred.scaled * Y.scale) + Y.center,
                    dimnames=list(colnames(X.pred), gene))
   return(Y.pred)
@@ -162,19 +170,27 @@ Deconvolute <- function(sc, bulk.data) {
   }
   overlapping.samples <- GetOverlappingSamples(sc, bulk.data)
   remaining.samples <- setdiff(colnames(bulk.data), overlapping.samples)
+  # Remove 0 variance genes from bulk
+  # Ideally do this to single-cell too, but marker genes chosen from single cell
+  # so these genes should have nonzero variance. 
+  bulk.data <- bulk.data[apply(bulk.data, 1, var) != 0,]
   overlapping.genes <- GetOverlappingGenes(sc, bulk.data)
   sc@data <- CountsToCPM(sc@data, sparse=TRUE)
   bulk.data <- CountsToCPM(bulk.data)
-  ref.data <- GenerateSCReference(sc)[overlapping.genes,]
+  ref.data <- GenerateSCReference(sc)[overlapping.genes,,drop=F]
   sc.props <- CalculateCellProportions(sc)
-  Y.train <- (ref.data %*% sc.props)[,overlapping.samples]
-  X.train <- bulk.data[overlapping.genes,overlapping.samples]
-  X.pred <- bulk.data[overlapping.genes,remaining.samples]
+  Y.train <- ref.data %*% sc.props[,overlapping.samples,drop=F]
+  X.train <- bulk.data[overlapping.genes,overlapping.samples,drop=F]
+  X.pred <- bulk.data[overlapping.genes,remaining.samples,drop=F]
   template <- numeric(length(remaining.samples))
   names(template) <- remaining.samples
-  Y.pred <- vapply(X=overlapping.genes, FUN=TransformBulk,
-                   FUN.VALUE=template, Y.train, X.train, X.pred, USE.NAMES=TRUE)
-  bulk.props <- apply(Y.pred, 1, function(b) {lsei::pnnls(ref.data, b, sum=1)}) 
+  Y.pred <- matrix(vapply(X=overlapping.genes, FUN=TransformBulk,
+                          FUN.VALUE=template, Y.train, X.train, X.pred,
+                          USE.NAMES=TRUE),
+                   nrow=length(remaining.samples))
+  bulk.props <- as.matrix(apply(Y.pred, 1, function(b) {
+                                             lsei::pnnls(ref.data, b, sum=1)$x
+                                           }))
   rownames(bulk.props) <- colnames(ref.data)
   colnames(bulk.props) <- remaining.samples
   return(bulk.props)
