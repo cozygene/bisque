@@ -1,3 +1,4 @@
+#TODO: Check that seurat object has ident, cell.names
 #' @export
 SeuratToExpressionSet <- function(seurat.object, delimiter="-", position=2) {
   # Extracts data from seurat object for deconvolution
@@ -217,13 +218,13 @@ Deconvolute <- function(sc.eset, bulk.eset, markers=NULL, cell.types="cellType",
   }
   else if (! cell.types %in% Biobase::varLabels(sc.eset)) {
     base::stop(base::cat(base::sprintf("Cell type label \"%s\"", cell.types),
-                         "not found in single-cell ExpressionSet phenoData.",
+                         "not found in single-cell ExpressionSet varLabels.",
                          sep=" "))
   }
   else if (! subject.names %in% Biobase::varLabels(sc.eset)) {
     base::stop(base::cat(base::sprintf("Individual label \"%s\"",
                                        subject.names),
-                         "not found in single-cell ExpressionSet phenoData.",
+                         "not found in single-cell ExpressionSet varLabels.",
                          sep=" "))
   }
   n.cell.types <-
@@ -300,12 +301,13 @@ Deconvolute <- function(sc.eset, bulk.eset, markers=NULL, cell.types="cellType",
                          nrow=base::length(samples$remaining))
   # Columns in Y.pred with NaN indicate transformation could not be learned
   #   for that gene. 
-  indices <- base::sapply(Y.pred, function(column) {base::anyNA(column)})
+  indices <- base::apply(Y.pred, MARGIN=2,
+                         FUN=function(column) {base::anyNA(column)})
   if (base::any(indices)) {
     if (verbose) {
       n.dropped <- base::sum(indices)
       base::cat(base::sprintf("Dropped an additional %i genes", n.dropped),
-                "for which a transformation could not be learned.", sep=" ")
+                "for which a transformation could not be learned.\n", sep=" ")
     }
     if (sum(!indices) == 0) {
       base::stop("Zero genes left for deconvolution.")
