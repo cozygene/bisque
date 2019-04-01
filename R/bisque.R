@@ -166,6 +166,9 @@ CalculateSCCellProportions <- function(sc.eset, subject.names, cell.types) {
   return(sc.props)
 }
 
+# NOTE
+# I would put a check on the input that gene isn't a vector
+# If gene is a vector, then base::scale will scale the columns of the Y.train and X.train matrices.
 TransformBulk <- function(gene, Y.train, X.train, X.pred) {
   # Learns linear transformation between observed bulk expression and linear
   # combination of sc-based reference and known proportions. Applies this
@@ -207,6 +210,156 @@ TransformBulk <- function(gene, Y.train, X.train, X.pred) {
   }
   return(Y.pred)
 }
+
+#=====================================================================
+# PCA + Weighted PCA functions
+#=====================================================================
+# Everything below here is what I added for the PCA-based deconvolution
+
+#' Estimate cell type proportions using first PC of expression matrix
+#' 
+#' x is a sample x gene bulk expression matrix. Genes should be marker genes
+#' If weighted = TRUE, multiply scaled gene expression by gene weights
+#'
+#' Returns a list:
+#'	x matrix of PCs, first column contains PC1, which should be used as 
+#'		as the estimate for cell type fractions
+#'	sdev eigenvalues of eigendecomposition of var-covar matrix. The 
+#'		1st eigenvalue should explain most of the variance.
+pca_ctp <- function(x, weighted=FALSE, w=NULL){
+	x <- base::scale(x)
+	if (weighted){
+		# Intersect gene names of weights and column names of x
+		common_markers <- base::intersect( base::colnames(x), base::names(w) )
+		if ( length(common_markers) == 0 ) base::stop("Genes from weights w do not match with column names of expression matrix x")
+		x <- x[,common_markers]; w <- w[common_markers]
+		wd <- base::diag(w)
+		xw <- x %*% wd
+		varcov <- t(xw) %*% xw
+	}
+	else varcov <- t(x) %*% x
+	varcov_ed <- base::eigen(varcov)
+	rot <- varcov_ed$vectors
+	wpcs <- x %*% rot
+	sds <- varcov_ed$values
+	# x contains PCs, sdev contains eigenvalues of eigendecomposition
+	return(list( x = wpcs, sdev = sds))
+}
+
+#' Get number of genes to use with weighted PCA
+#' x is a sample by gene expression matrix containing the marker genes
+#' w are the weights of the genes that correspond to the columns of x
+#' min_gene and max_gene are the minimum and maximum number of genes to 
+#'	consider as markers.
+get_n_genes_w = function(x, w, min_gene = 25, max_gene = 200){
+	max_gene = base::min(max_gene, base::ncol(x))
+	ratios = base::rep(-Inf, max_gene)
+	for (i in min_gene:max_gene){
+		ret = pca_ctp(x[,1:i], weighted=TRUE, w=w[1:i])
+		vars = ret$sdev
+		ratios[i] = vars[1] / vars[2]
+	}
+	best_n = base::which.max(ratios)
+	return(best_n)
+}
+
+#' Get number of genes to use, no weighted information
+get_n_genes = function(x, min_gene = 25, max_gene = 200){
+	max_gene = base::min(max_gene, base::ncol(x))
+	ratios = base::rep(-Inf, max_gene)
+	for (i in min_gene:max_gene){
+		ret = pca_ctp(x[,1:i])
+		vars = ret$sdev
+		ratios[i] = vars[1] / vars[2]
+	}
+	best_n = base::which.max(ratios)
+	return(best_n)
+}	
+
+
+#' Returns estimated "proportions" from PCA-based deconvolution
+#' Uses a list of marker genes to subset the expression data, and returns the 
+#' first PC as the cell type fraction estimates. Optionally, weights for each marker
+#' can be used to prioritize genes that are highly expressed in the given cell type.
+#' 
+#' bulk.eset is ExpressionSet of bulk data (gene x sample). Expression data should be normalized
+#' markers is a data frame with columns specifying cluster and gene, and optionally a 
+#'	a column for weights, typically the fold-change of the gene. Important that the genes
+#'	in each row are sorted by signficance for each cell type.
+#' ct_col, gene_col, and w_col are the column names in markers for cell type, gene, and weight
+#' 
+#' Returns a list of 2 matrices. The first under the slot name CTP contains the estimated cell type proportions
+#'	The slot VarExpl contains the variance explained by the first 20 PCs for the cell type marker bulk expression.
+DeconvolutePCA <- function(bulk.eset, 
+						   markers, 
+						   ct_col="cluster", 
+						   gene_col="gene", 
+						   min_gene = 25, 
+						   max_gene = 200, 
+						   weighted=FALSE, 
+						   w_col = "avg_logFC", 
+						   verbose=TRUE){
+	if ( ! methods::is(bulk.eset, "ExpressionSet") ) base::stop("Expression data should be in ExpressionSet")
+	if (min_gene > max_gene){
+		base::stop(base::paste0(base::sprintf("min_gene (set at %i) ", min_gene),
+							 base::sprintf("must be less than or equal to max_gene (set at %i)\n", max_gene)))
+	}
+	cell_types = sort(unique(markers[,ct_col]))
+	n_ct = length(cell_types)
+	n_s = base::ncol(bulk.eset)
+	if (verbose){
+		base::cat(base::sprintf("Estimating proportions for %i cell types in %i samples in bulk\n", n_ct, n_s))
+	}
+	# Remove unexpressed and zero-variance genes
+	bulk.eset <- FilterZeroVarianceGenes(bulk.eset, verbose)
+	bulk.eset <- FilterUnexpressedGenes(bulk.eset, verbose)
+	ctp = base::lapply(cell_types, function(ct){
+					   markers_ct= markers[ markers[,ct_col] == ct , , drop=FALSE]
+					   ctm = base::make.unique(markers_ct[, gene_col])
+					   # Get markers in common between bulk and markers data frame
+					   common_markers = base::intersect(ctm, Biobase::featureNames(bulk.eset))
+					   if ( base::length(common_markers) == 0 ){
+						   base::stop("No marker genes found in bulk expression data")
+					   }
+					   expr = Biobase::exprs(bulk.eset)[common_markers,]
+					   expr = base::t(expr)
+					   if ( base::ncol(expr) < min_gene ){
+						   base::stop(base::paste0(base::sprintf("For cell type %s, There are less marker genes in ", ct), 
+						   						   base::sprintf("the bulk expression set (%i) than the ", base::ncol(expr)),
+						   						   base::sprintf("minimum number of genes set (%i) ", min_gene),
+						   						   "for PCA-based deconvolution\nSet the min_gene parameter to a lower integer."))
+					   }
+					   if (weighted){
+					   	   # Get gene weights
+					   	   ctw = markers_ct[, w_col]; names(ctw) = ctm; ctw = ctw[common_markers]
+					   	   ng = get_n_genes_w(expr, ctw, min_gene, max_gene) # Number of markers for PCA
+					   	   if (verbose){
+							   base::cat(base::sprintf("Using %i genes for cell type %s\n", ng, ct))
+						   }
+					   	   ret = pca_ctp(expr[,1:ng,drop=FALSE], weighted=TRUE, w=ctw[1:ng])
+					   }
+					   else{
+					   	   ng = get_n_genes(expr, min_gene, max_gene)
+					   	   if (verbose){
+							   base::cat(base::sprintf("Using %i genes for cell type %s\n", ng, ct))
+						   }
+					   	   ret = pca_ctp(expr)
+					   }
+					   return(ret)
+						   })
+	names(ctp) = cell_types
+	ctp_pc1 = base::lapply(ctp, function(x) x$x[,1])
+	ctp_varexpl = base::sapply(ctp, function(x) x$sdev[1:20])
+	rownames(ctp_varexpl) = base::paste0("PC", base::as.character(1:20))
+	ctp_pc1 = base::do.call(cbind, ctp_pc1)
+	return(list(CTP=ctp_pc1, VarExpl=ctp_varexpl))
+}
+
+
+
+#=====================================================================
+#=====================================================================
+
 
 # TODO: Catch division by 0 in CPM conversion (this happens if sample has no expression)
 #' @export
