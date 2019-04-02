@@ -243,7 +243,7 @@ pca_ctp <- function(x, weighted=FALSE, w=NULL){
 	wpcs <- x %*% rot
 	sds <- varcov_ed$values
 	# x contains PCs, sdev contains eigenvalues of eigendecomposition
-	return(list( x = wpcs, sdev = sds))
+	return(list( x = wpcs, sdev = sds, genes=colnames(x)))
 }
 
 #' Get number of genes to use with weighted PCA
@@ -253,26 +253,24 @@ pca_ctp <- function(x, weighted=FALSE, w=NULL){
 #'	consider as markers.
 get_n_genes_w = function(x, w, min_gene = 25, max_gene = 200){
 	max_gene = base::min(max_gene, base::ncol(x))
-	ratios = base::rep(-Inf, max_gene)
-	for (i in min_gene:max_gene){
-		ret = pca_ctp(x[,1:i], weighted=TRUE, w=w[1:i])
-		vars = ret$sdev
-		ratios[i] = vars[1] / vars[2]
-	}
-	best_n = base::which.max(ratios)
+	ratios = lapply(min_gene:max_gene, function(i){
+					ret = pca_ctp(x[,1:i], weighted=TRUE, w=w[1:i])
+					vars = ret$sdev
+					vars[1] / vars[2]
+						   })
+	best_n = base::which.max(ratios) + min_gene - 1
 	return(best_n)
 }
 
 #' Get number of genes to use, no weighted information
 get_n_genes = function(x, min_gene = 25, max_gene = 200){
 	max_gene = base::min(max_gene, base::ncol(x))
-	ratios = base::rep(-Inf, max_gene)
-	for (i in min_gene:max_gene){
-		ret = pca_ctp(x[,1:i])
-		vars = ret$sdev
-		ratios[i] = vars[1] / vars[2]
-	}
-	best_n = base::which.max(ratios)
+	ratios = lapply(min_gene:max_gene, function(i){
+					ret = pca_ctp(x[,1:i])
+					vars = ret$sdev
+					vars[1] / vars[2]
+						   })
+	best_n = base::which.max(ratios) + min_gene - 1
 	return(best_n)
 }	
 
@@ -314,7 +312,7 @@ DeconvolutePCA <- function(bulk.eset,
 	bulk.eset <- FilterZeroVarianceGenes(bulk.eset, verbose)
 	bulk.eset <- FilterUnexpressedGenes(bulk.eset, verbose)
 	ctp = base::lapply(cell_types, function(ct){
-					   markers_ct= markers[ markers[,ct_col] == ct , , drop=FALSE]
+					   markers_ct = markers[ markers[,ct_col] == ct , , drop=FALSE]
 					   ctm = base::make.unique(markers_ct[, gene_col])
 					   # Get markers in common between bulk and markers data frame
 					   common_markers = base::intersect(ctm, Biobase::featureNames(bulk.eset))
@@ -333,17 +331,27 @@ DeconvolutePCA <- function(bulk.eset,
 					   	   # Get gene weights
 					   	   ctw = markers_ct[, w_col]; names(ctw) = ctm; ctw = ctw[common_markers]
 					   	   ng = get_n_genes_w(expr, ctw, min_gene, max_gene) # Number of markers for PCA
+					   	   expr = expr[,1:ng,drop=FALSE]
 					   	   if (verbose){
-							   base::cat(base::sprintf("Using %i genes for cell type %s\n", ng, ct))
+							   base::cat(base::sprintf("Using %i genes for cell type %s; ", ng, ct))
 						   }
-					   	   ret = pca_ctp(expr[,1:ng,drop=FALSE], weighted=TRUE, w=ctw[1:ng])
+					   	   ret = pca_ctp(expr, weighted=TRUE, w=ctw[1:ng])
 					   }
 					   else{
 					   	   ng = get_n_genes(expr, min_gene, max_gene)
+					   	   expr[,1:ng,drop=FALSE]
 					   	   if (verbose){
 							   base::cat(base::sprintf("Using %i genes for cell type %s\n", ng, ct))
 						   }
 					   	   ret = pca_ctp(expr)
+					   }
+					   # Flip the sign of the first PC if negatively correlated with most genes
+					   cors = cor(expr, ret$x[,1])
+					   n_pos = sum(cors[,1] > 0)
+					   if (n_pos/base::length(cors[,1]) < (0.5)) ret$x[,1] = ret$x[,1] * -1
+					   if (verbose){
+					   	   cors = cor(expr, ret$x[,1]); n_pos = sum(cors[,1] > 0)
+						   base::cat(base::sprintf("%i/%i marker genes correlate positively with PC1 for cell type %s\n", n_pos, base::length(cors[,1]), ct))
 					   }
 					   return(ret)
 						   })
@@ -352,7 +360,9 @@ DeconvolutePCA <- function(bulk.eset,
 	ctp_varexpl = base::sapply(ctp, function(x) x$sdev[1:20])
 	rownames(ctp_varexpl) = base::paste0("PC", base::as.character(1:20))
 	ctp_pc1 = base::do.call(cbind, ctp_pc1)
-	return(list(CTP=ctp_pc1, VarExpl=ctp_varexpl))
+	ctp_pc1 = base::t(ctp_pc1)
+	genes_used = base::lapply(ctp, function(x) x$genes)
+	return(list(CTP=ctp_pc1, VarExpl=ctp_varexpl, markers=genes_used))
 }
 
 
