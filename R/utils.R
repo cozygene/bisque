@@ -96,7 +96,7 @@ CountsToCPM <- function(eset) {
 #' @return eset Expression Set with zero variance genes removed
 FilterZeroVarianceGenes <- function(eset, verbose=TRUE) {
   indices <- (base::apply(Biobase::exprs(eset), 1, stats::var) != 0)
-  indices <- ! base::is.na(indices)
+  indices <- indices & (! base::is.na(indices))
   if (base::sum(indices) > 0) {
     eset <-
       Biobase::ExpressionSet(assayData=Biobase::exprs(eset)[indices,,drop=F],
@@ -117,7 +117,7 @@ FilterZeroVarianceGenes <- function(eset, verbose=TRUE) {
 #' @return eset Expression Set with zero expression genes removed
 FilterUnexpressedGenes <- function(eset, verbose=TRUE) {
   indices <- (base::apply(Biobase::exprs(eset), 1, base::sum) != 0)
-  indices <- ! base::is.na(indices)
+  indices <- indices & (! base::is.na(indices))
   if (base::sum(indices) > 0) {
     eset <-
       Biobase::ExpressionSet(assayData=Biobase::exprs(eset)[indices,,drop=F],
