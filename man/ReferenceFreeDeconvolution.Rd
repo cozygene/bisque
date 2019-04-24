@@ -4,18 +4,25 @@
 \alias{ReferenceFreeDeconvolution}
 \title{Performs reference-free deconvolution of bulk expression using marker genes}
 \usage{
-ReferenceFreeDeconvolution(bulk.eset, markers, ct.col = "cluster",
-  gene.col = "gene", min.gene = 25, max.gene = 200,
-  weighted = FALSE, w.col = "avg.logFC", verbose = TRUE)
+ReferenceFreeDeconvolution(bulk.eset, markers, ct_col = "cluster",
+  gene_col = "gene", min_gene = 5, max_gene = 200,
+  weighted = FALSE, w_col = "avg_logFC", unique_markers = TRUE,
+  verbose = TRUE)
 }
 \arguments{
-\item{bulk.eset}{Expression Set containing bulk data.
-Expression data should be normalized.}
+\item{bulk.eset}{Expression Set. Normalized bulk expression data.}
 
 \item{markers}{Data frame with columns specifying cluster and gene,
 and optionally a column for weights, typically the fold-change of the gene.
-Important that the genes in each row are sorted by signficance for each
-cell type.}
+Important that the genes for each cell type are row-sorted by signficance.}
+
+\item{weighted}{Boolean. Whether to use weights for gene prioritization}
+
+\item{unique_markers}{Boolean. If TRUE, subset markers to include only genes 
+that are markers for only one cell type}
+
+\item{verbose}{Boolean. Whether to print log info during deconvolution.
+Errors will be printed regardless.}
 
 \item{ct.col}{Character string. Column name specifying cluster/cell type
 corresponding to each marker gene in \strong{markers}.}
@@ -27,13 +34,8 @@ corresponding to each marker gene in \strong{markers}.}
 
 \item{max.gene}{Numeric. Max number of genes to use for each cell type.}
 
-\item{weighted}{Boolean. Whether to use weights for gene prioritization}
-
-\item{w.col}{Character string. Column name for weights, such as "avg.logFC",
+\item{w.col}{Character string. Column name for weights, such as "avg_logFC",
 in \strong{markers}}
-
-\item{verbose}{Boolean. Whether to print log info during deconvolution.
-Errors will be printed regardless.}
 }
 \value{
 A List. Slot \strong{bulk.props} contains estimated relative cell

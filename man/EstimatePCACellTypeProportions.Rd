@@ -15,7 +15,7 @@ gene weights}
 \item{w}{Numeric vector. Weights of genes}
 }
 \value{
-ret List. Attribute \strong{x} contains matrix of PCs, where PC1
+ret List. Attribute \strong{pcs} contains matrix of PCs, where PC1
   should be used as estimates for cell type abundances
   Attribute \strong{sdev} contains eigenvalues of eigendecomposition of
   var-covar matrix. The 1st eigenvalue should explain most of the variance.
