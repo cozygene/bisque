@@ -8,8 +8,6 @@
 #'   that indicates cell type
 #' @return sc.ref Matrix. Reference profile with number of gene rows by number
 #'   of cell types columns. 
-#' @examples
-#' GenerateSCReference(sc.eset, "cellType")
 GenerateSCReference <- function(sc.eset, cell.types) {
   cell.labels <- base::factor(sc.eset[[cell.types]])
   all.cell.types <- base::levels(cell.labels)
@@ -33,8 +31,6 @@ GenerateSCReference <- function(sc.eset, cell.types) {
 #'   that indicates cell type
 #' @return sc.props Matrix. Cell proportions with number of cell types rows 
 #'   by number of individuals columns
-#' @examples
-#' CalculateSCCellProportions(sc.eset, "SubjectName", "cellType")
 CalculateSCCellProportions <- function(sc.eset, subject.names, cell.types) {
   individual.labels <- base::factor(sc.eset[[subject.names]])
   individuals <- base::levels(individual.labels)
@@ -128,8 +124,7 @@ SupervisedTransformBulk <- function(gene, Y.train, X.train, X.pred) {
 #' @return Y.pred Numeric Matrix. One row for given gene by number of remaining
 #'   individuals columns. Contains transformed bulk expression for each
 #'   individual.
-SemisupervisedTransformBulk <- function(gene, Y.train, X.pred,
-                                        prior.a, prior.b) {
+SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
   # Learns linear transformation of observed bulk to match distribution of
   # weighted sum of reference
   #
@@ -138,11 +133,11 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred,
   Y.center <- base::attr(Y.train.scaled, "scaled:center")
   Y.scale <- base::attr(Y.train.scaled, "scaled:scale")
   n <- base::length(Y.train.scaled)
-  # MAP estimator for scaling factor, assuming Y is normal
-  posterior.scale <- base::sqrt((prior.b + ((n - 1) * (Y.scale^2) / 2)) /
-                                (prior.a + (n / 2) + 1))
+  # Shrinkage estimator that minimizes MSE for scaling factor, assuming Y is
+  # normal
+  shrink.scale <- base::sqrt(base::sum((Y.train[gene,,drop=T]-Y.center)^2)/n+1)
   X.pred.scaled <- base::scale(X.pred[gene,,drop=T])
-  Y.pred <- base::matrix((X.pred.scaled * posterior.scale) + Y.center,
+  Y.pred <- base::matrix((X.pred.scaled * shrink.scale) + Y.center,
                          dimnames=base::list(base::colnames(X.pred), gene))
   return(Y.pred)
 }
@@ -304,20 +299,11 @@ ReferenceBasedDeconvolution <- function(bulk.eset,
     if (verbose) {
       base::cat("Applying transformation to bulk samples and deconvoluting.\n")
     }
-    obs <- apply(Y.train, 1, stats::var)
-    mu <- base::mean(obs)
-    nu <- stats::var(obs)
-    n <- base::length(obs)
-    # Inverse gamma prior, MLE of alpha and beta from observed variances across
-    #   all genes
-    prior.a <- ((mu^2) / nu) + 2
-    prior.b <- base::sum(1 / obs)/(n * prior.a)
     # Y.pred is the transformed bulk for samples to be deconvoluted.
     Y.pred <- base::matrix(base::vapply(X=genes,
                                         FUN=SemisupervisedTransformBulk,
                                         FUN.VALUE=template,
                                         Y.train, X.pred,
-                                        prior.a, prior.b,
                                         USE.NAMES=TRUE),
                            nrow=base::length(sample.names))
   }
