@@ -1,3 +1,72 @@
+#' Find overlapping samples in single-cell and bulk data
+#'
+#' @param sc.eset Expression Set with single-cell data
+#' @param bulk.eset Expression Set with bulk data
+#' @param subject.names A character string. Name of phenoData attribute in
+#'   sc.eset that indicates individual ID (that would be found in bulk.eset
+#'   if overlapping)
+#' @param verbose Boolean. Print logging info
+#' @return samples A list with attributes \emph{overlapping} and
+#'   \emph{remaining}. Each attribute refers to a character vector that lists
+#'   the samples found in both datasets and samples found only in bulk,
+#'   respectively
+GetOverlappingSamples <- function(sc.eset, bulk.eset, subject.names, verbose) {
+  bulk.samples <- Biobase::sampleNames(bulk.eset)
+  sc.samples <- base::levels(base::factor(sc.eset[[subject.names]]))
+  overlapping.samples <- base::intersect(bulk.samples, sc.samples)
+  if (base::length(overlapping.samples) == 0) {
+    base::stop("No overlapping samples in bulk and single-cell expression.")
+  }
+  remaining.samples <- base::setdiff(Biobase::sampleNames(bulk.eset),
+                                     overlapping.samples)
+  if (base::length(remaining.samples) == 0) {
+    base::stop("All samples have single-cell data, nothing to process.")
+  }
+  samples <- base::list("overlapping"=overlapping.samples,
+                        "remaining"=remaining.samples)
+  if (verbose) {
+    n.overlapping <- base::length(samples$overlapping)
+    n.remaining <- base::length(samples$remaining)
+    base::cat(base::sprintf("Found %i samples", n.overlapping),
+                            "with bulk and single-cell expression.\n",
+                            sep=" ")
+    base::cat(base::sprintf("Remaining %i", n.remaining),
+                            "bulk expression samples will be deconvoluted.\n",
+                            sep=" ")
+  }
+  return(samples)
+}
+
+#' Find overlapping genes in single-cell data, bulk data, and marker genes
+#'
+#' @param sc.eset Expression Set with single-cell data
+#' @param bulk.eset Expression Set with bulk data
+#' @param markers Character vector. List of relevant marker genes
+#' @param verbose Boolean. Print logging info
+#' @return overlapping.genes Character vector. List of genes found in markers
+#'   and both datasets. 
+GetOverlappingGenes <- function(sc.eset, bulk.eset, markers, verbose) {
+  bulk.genes <- Biobase::featureNames(bulk.eset)
+  sc.genes <- Biobase::featureNames(sc.eset)
+  overlapping.genes <- base::intersect(bulk.genes, sc.genes)
+  if (base::length(overlapping.genes) == 0) {
+    base::stop(base::paste0("No overlapping genes found between bulk and ",
+                           "single-cell expression."))
+  }
+  overlapping.genes <- base::intersect(overlapping.genes, markers)
+  if (base::length(overlapping.genes) == 0) {
+    base::stop(base::paste0("No marker genes found in both bulk and ",
+                           "single-cell expression."))
+  }
+  if (verbose) {
+    n.genes <- base::length(overlapping.genes)
+    base::cat(base::sprintf("Using %i genes in both", n.genes),
+                            "bulk and single-cell expression.\n",
+                            sep=" ")
+  }
+  return(overlapping.genes)
+}
+
 #' Generate reference profile for cell types identified in single-cell data
 #'
 #' Averages expression within each cell type across all samples to use as 
@@ -105,8 +174,8 @@ SupervisedTransformBulk <- function(gene, Y.train, X.train, X.pred) {
 
 #' Transforms bulk expression of a gene using only single-cell data
 #'
-#' For a specific gene, this function uses a Bayesian approach to learn a
-#' transformation of the bulk expression to match the distribution produced
+#' For a specific gene, this function learns a transformation of
+#' the bulk expression to match the distribution produced
 #' by the single-cell based reference and observed single-cell based cell
 #' proportions.
 #'
@@ -117,10 +186,6 @@ SupervisedTransformBulk <- function(gene, Y.train, X.train, X.pred) {
 #' @param X.pred Numeric Matrix. Number of gene rows by number of remaining
 #'   individuals columns. Contains observed bulk expression for each individual
 #'   to be transformed.
-#' @param prior.a Numeric. Value of Inverse-Gamma prior distribution
-#'   hyperparameter alpha.
-#' @param prior.b Numeric. Value of Inverse-gamma prior distribution
-#'   hyperparameter beta.
 #' @return Y.pred Numeric Matrix. One row for given gene by number of remaining
 #'   individuals columns. Contains transformed bulk expression for each
 #'   individual.

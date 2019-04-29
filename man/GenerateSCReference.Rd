@@ -20,6 +20,3 @@ sc.ref Matrix. Reference profile with number of gene rows by number
 Averages expression within each cell type across all samples to use as 
 reference profile.
 }
-\examples{
-GenerateSCReference(sc.eset, "cellType")
-}

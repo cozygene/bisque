@@ -35,6 +35,3 @@ arguments are used to infer the individual ID from the cell ID. For example,
 a delimiter of "-" and position of "2" indicates that the individual ID for
 the cell ID \strong{ACTG-2} would be \strong{2}.
 }
-\examples{
-SeuratToExpressionSet(dlpfc, "-", 2, "v2") 
-}
