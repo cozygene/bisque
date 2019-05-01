@@ -23,6 +23,3 @@ sc.props Matrix. Cell proportions with number of cell types rows
 Returns proportion of each cell type out of total cells for each individual
 in the single-cell Expression Set
 }
-\examples{
-CalculateSCCellProportions(sc.eset, "SubjectName", "cellType")
-}

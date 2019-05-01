@@ -4,7 +4,7 @@
 \alias{SemisupervisedTransformBulk}
 \title{Transforms bulk expression of a gene using only single-cell data}
 \usage{
-SemisupervisedTransformBulk(gene, Y.train, X.pred, prior.a, prior.b)
+SemisupervisedTransformBulk(gene, Y.train, X.pred)
 }
 \arguments{
 \item{gene}{Character string. Gene name that corresponds to row in Y.train}
@@ -16,12 +16,6 @@ single-cell based cell proportion estimates for each individual}
 \item{X.pred}{Numeric Matrix. Number of gene rows by number of remaining
 individuals columns. Contains observed bulk expression for each individual
 to be transformed.}
-
-\item{prior.a}{Numeric. Value of Inverse-Gamma prior distribution
-hyperparameter alpha.}
-
-\item{prior.b}{Numeric. Value of Inverse-gamma prior distribution
-hyperparameter beta.}
 }
 \value{
 Y.pred Numeric Matrix. One row for given gene by number of remaining
@@ -29,8 +23,8 @@ Y.pred Numeric Matrix. One row for given gene by number of remaining
   individual.
 }
 \description{
-For a specific gene, this function uses a Bayesian approach to learn a
-transformation of the bulk expression to match the distribution produced
+For a specific gene, this function learns a transformation of
+the bulk expression to match the distribution produced
 by the single-cell based reference and observed single-cell based cell
 proportions.
 }

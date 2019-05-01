@@ -20,8 +20,6 @@
 #' @return sc.eset Expression set containing relevant phenotype and individual
 #'   data, \emph{cellType} and \emph{SubjectName}.
 #'
-#' @examples
-#' SeuratToExpressionSet(dlpfc, "-", 2, "v2") 
 #' @export
 SeuratToExpressionSet <- function(seurat.object, delimiter, position,
                                   version = c("v2", "v3")) {

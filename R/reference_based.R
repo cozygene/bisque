@@ -1,3 +1,72 @@
+#' Find overlapping samples in single-cell and bulk data
+#'
+#' @param sc.eset Expression Set with single-cell data
+#' @param bulk.eset Expression Set with bulk data
+#' @param subject.names A character string. Name of phenoData attribute in
+#'   sc.eset that indicates individual ID (that would be found in bulk.eset
+#'   if overlapping)
+#' @param verbose Boolean. Print logging info
+#' @return samples A list with attributes \emph{overlapping} and
+#'   \emph{remaining}. Each attribute refers to a character vector that lists
+#'   the samples found in both datasets and samples found only in bulk,
+#'   respectively
+GetOverlappingSamples <- function(sc.eset, bulk.eset, subject.names, verbose) {
+  bulk.samples <- Biobase::sampleNames(bulk.eset)
+  sc.samples <- base::levels(base::factor(sc.eset[[subject.names]]))
+  overlapping.samples <- base::intersect(bulk.samples, sc.samples)
+  if (base::length(overlapping.samples) == 0) {
+    base::stop("No overlapping samples in bulk and single-cell expression.")
+  }
+  remaining.samples <- base::setdiff(Biobase::sampleNames(bulk.eset),
+                                     overlapping.samples)
+  if (base::length(remaining.samples) == 0) {
+    base::stop("All samples have single-cell data, nothing to process.")
+  }
+  samples <- base::list("overlapping"=overlapping.samples,
+                        "remaining"=remaining.samples)
+  if (verbose) {
+    n.overlapping <- base::length(samples$overlapping)
+    n.remaining <- base::length(samples$remaining)
+    base::cat(base::sprintf("Found %i samples", n.overlapping),
+                            "with bulk and single-cell expression.\n",
+                            sep=" ")
+    base::cat(base::sprintf("Remaining %i", n.remaining),
+                            "bulk expression samples will be deconvoluted.\n",
+                            sep=" ")
+  }
+  return(samples)
+}
+
+#' Find overlapping genes in single-cell data, bulk data, and marker genes
+#'
+#' @param sc.eset Expression Set with single-cell data
+#' @param bulk.eset Expression Set with bulk data
+#' @param markers Character vector. List of relevant marker genes
+#' @param verbose Boolean. Print logging info
+#' @return overlapping.genes Character vector. List of genes found in markers
+#'   and both datasets. 
+GetOverlappingGenes <- function(sc.eset, bulk.eset, markers, verbose) {
+  bulk.genes <- Biobase::featureNames(bulk.eset)
+  sc.genes <- Biobase::featureNames(sc.eset)
+  overlapping.genes <- base::intersect(bulk.genes, sc.genes)
+  if (base::length(overlapping.genes) == 0) {
+    base::stop(base::paste0("No overlapping genes found between bulk and ",
+                           "single-cell expression."))
+  }
+  overlapping.genes <- base::intersect(overlapping.genes, markers)
+  if (base::length(overlapping.genes) == 0) {
+    base::stop(base::paste0("No marker genes found in both bulk and ",
+                           "single-cell expression."))
+  }
+  if (verbose) {
+    n.genes <- base::length(overlapping.genes)
+    base::cat(base::sprintf("Using %i genes in both", n.genes),
+                            "bulk and single-cell expression.\n",
+                            sep=" ")
+  }
+  return(overlapping.genes)
+}
+
 #' Generate reference profile for cell types identified in single-cell data
 #'
 #' Averages expression within each cell type across all samples to use as 
@@ -8,8 +77,6 @@
 #'   that indicates cell type
 #' @return sc.ref Matrix. Reference profile with number of gene rows by number
 #'   of cell types columns. 
-#' @examples
-#' GenerateSCReference(sc.eset, "cellType")
 GenerateSCReference <- function(sc.eset, cell.types) {
   cell.labels <- base::factor(sc.eset[[cell.types]])
   all.cell.types <- base::levels(cell.labels)
@@ -33,8 +100,6 @@ GenerateSCReference <- function(sc.eset, cell.types) {
 #'   that indicates cell type
 #' @return sc.props Matrix. Cell proportions with number of cell types rows 
 #'   by number of individuals columns
-#' @examples
-#' CalculateSCCellProportions(sc.eset, "SubjectName", "cellType")
 CalculateSCCellProportions <- function(sc.eset, subject.names, cell.types) {
   individual.labels <- base::factor(sc.eset[[subject.names]])
   individuals <- base::levels(individual.labels)
@@ -109,8 +174,8 @@ SupervisedTransformBulk <- function(gene, Y.train, X.train, X.pred) {
 
 #' Transforms bulk expression of a gene using only single-cell data
 #'
-#' For a specific gene, this function uses a Bayesian approach to learn a
-#' transformation of the bulk expression to match the distribution produced
+#' For a specific gene, this function learns a transformation of
+#' the bulk expression to match the distribution produced
 #' by the single-cell based reference and observed single-cell based cell
 #' proportions.
 #'
@@ -121,15 +186,10 @@ SupervisedTransformBulk <- function(gene, Y.train, X.train, X.pred) {
 #' @param X.pred Numeric Matrix. Number of gene rows by number of remaining
 #'   individuals columns. Contains observed bulk expression for each individual
 #'   to be transformed.
-#' @param prior.a Numeric. Value of Inverse-Gamma prior distribution
-#'   hyperparameter alpha.
-#' @param prior.b Numeric. Value of Inverse-gamma prior distribution
-#'   hyperparameter beta.
 #' @return Y.pred Numeric Matrix. One row for given gene by number of remaining
 #'   individuals columns. Contains transformed bulk expression for each
 #'   individual.
-SemisupervisedTransformBulk <- function(gene, Y.train, X.pred,
-                                        prior.a, prior.b) {
+SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
   # Learns linear transformation of observed bulk to match distribution of
   # weighted sum of reference
   #
@@ -138,11 +198,11 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred,
   Y.center <- base::attr(Y.train.scaled, "scaled:center")
   Y.scale <- base::attr(Y.train.scaled, "scaled:scale")
   n <- base::length(Y.train.scaled)
-  # MAP estimator for scaling factor, assuming Y is normal
-  posterior.scale <- base::sqrt((prior.b + ((n - 1) * (Y.scale^2) / 2)) /
-                                (prior.a + (n / 2) + 1))
+  # Shrinkage estimator that minimizes MSE for scaling factor, assuming Y is
+  # normal
+  shrink.scale <- base::sqrt(base::sum((Y.train[gene,,drop=T]-Y.center)^2)/n+1)
   X.pred.scaled <- base::scale(X.pred[gene,,drop=T])
-  Y.pred <- base::matrix((X.pred.scaled * posterior.scale) + Y.center,
+  Y.pred <- base::matrix((X.pred.scaled * shrink.scale) + Y.center,
                          dimnames=base::list(base::colnames(X.pred), gene))
   return(Y.pred)
 }
@@ -304,20 +364,11 @@ ReferenceBasedDeconvolution <- function(bulk.eset,
     if (verbose) {
       base::cat("Applying transformation to bulk samples and deconvoluting.\n")
     }
-    obs <- apply(Y.train, 1, stats::var)
-    mu <- base::mean(obs)
-    nu <- stats::var(obs)
-    n <- base::length(obs)
-    # Inverse gamma prior, MLE of alpha and beta from observed variances across
-    #   all genes
-    prior.a <- ((mu^2) / nu) + 2
-    prior.b <- base::sum(1 / obs)/(n * prior.a)
     # Y.pred is the transformed bulk for samples to be deconvoluted.
     Y.pred <- base::matrix(base::vapply(X=genes,
                                         FUN=SemisupervisedTransformBulk,
                                         FUN.VALUE=template,
                                         Y.train, X.pred,
-                                        prior.a, prior.b,
                                         USE.NAMES=TRUE),
                            nrow=base::length(sample.names))
   }

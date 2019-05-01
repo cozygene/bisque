@@ -4,22 +4,35 @@
 \alias{ReferenceFreeDeconvolution}
 \title{Performs reference-free deconvolution of bulk expression using marker genes}
 \usage{
-ReferenceFreeDeconvolution(bulk.eset, markers, ct_col = "cluster",
+ReferenceFreeDeconvolution(bulk.eset, markers, counts = TRUE,
+  normalized = FALSE, max_pc = 5, ct_col = "cluster",
   gene_col = "gene", min_gene = 5, max_gene = 200,
   weighted = FALSE, w_col = "avg_logFC", unique_markers = TRUE,
-  verbose = TRUE)
+  pct_thresh = 0.5, verbose = TRUE)
 }
 \arguments{
-\item{bulk.eset}{Expression Set. Normalized bulk expression data.}
+\item{bulk.eset}{Expression Set containing bulk data,}
 
 \item{markers}{Data frame with columns specifying cluster and gene,
 and optionally a column for weights, typically the fold-change of the gene.
 Important that the genes for each cell type are row-sorted by signficance.}
 
+\item{counts}{Boolean. TRUE if raw counts are given.}
+
+\item{normalized}{Boolean. TRUE if bulk data is to be treated as normalized.}
+
+\item{max_pc}{Numeric. If normalized=FALSE, the maximum number of PCs to consider
+regressing out for normalization.}
+
 \item{weighted}{Boolean. Whether to use weights for gene prioritization}
 
 \item{unique_markers}{Boolean. If TRUE, subset markers to include only genes 
 that are markers for only one cell type}
+
+\item{pct_thresh}{Numeric. When normalized=FALSE. A fraction between 0 and 1 
+that specifies the maximum fraction of CTP-CTP correlation coefficients 
+that are positive. Expression data with all positive CTP-CTP correlations 
+are likely influenced by global covariation.}
 
 \item{verbose}{Boolean. Whether to print log info during deconvolution.
 Errors will be printed regardless.}
