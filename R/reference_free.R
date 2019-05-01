@@ -194,126 +194,6 @@ GetCTP <- function(bulk,
   return(ctp)
 }
 
-#' Regress out global expression PCs from bulk.
-#' 
-#' This function normalizes bulk expression data by first calculating
-#' global PCs and then regressing them out sequentially. If genes_subset 
-#' is given, only normalizes and returns expression data for those listed 
-#' genes, speeding up computation.
-#' 
-#' @param bulk.eset ExpressionSet. Contains bulk expression data to normalize
-#' @param max_pc Numeric. Maximum number of PCs to regress out
-#' @param genes_subset Character vector. Vector of genes to subset the ExpressionSet bulk object
-#'
-#' @return List with each element containing an ExpressionSet object of the normalized
-#' bulk gene expression data, starting with 0 (non-normalized) up to and including 
-#' max_pc
-#'
-NormalizeByPC <- function(bulk.eset, max_pc, genes_subset=NULL){
-  bulk.eset <- FilterZeroVarianceGenes(bulk.eset, verbose=FALSE)
-  bulk.eset <- FilterUnexpressedGenes(bulk.eset, verbose=FALSE)
-  bulk <- Biobase::exprs(bulk.eset);
-  global_pcs <- prcomp(t(bulk), retx=TRUE, scale.=TRUE)$x
-  if (!is.null(genes_subset)){
-    bulk <- bulk[genes_subset,]
-  }
-  bulks <- list()
-  # names(bulks) <- paste0("PC", as.character(0:max_pc))
-  bulks[["0"]] <- ExpressionSet(bulk)
-  for (i in 1:max_pc){
-    # pc_name <- paste0("PC", as.character(i))
-    bulk <- t(apply(bulk, 1, function(x) resid(lm(x ~ global_pcs[,i,drop=FALSE]))))
-    bulks[[as.character(i)]] <- ExpressionSet(bulk)
-  }
-  return(bulks)
-}
-
-#' Return number of PCs to use for PCA CTP estimation
-#'
-#' Return the minimum number of PCs to regress out based on 
-#' CTP-CTP correlations. Given a list of vectors, return 
-#' the number of PCs with less than pct_thresh percent of 
-#' coefficients that are greater than 0.
-#'
-#' @param cors List. Contains correlation coefficients.
-#' @param pct_thresh Numeric. Threshold of percent of coefficients that are greater than 0.
-#' @param verbose Boolean. Print log info.
-#'
-#' @return best_pc_n Numeric. The number of PCs to regress out to remove global covariates.
-GetNumPC <- function(cors, pct_thresh=0.5, verbose=TRUE){
-  if ( pct_thresh < 0 | pct_thresh > 1) base::stop("pct_thresh should be between 0 and 1")
-  n_gt_0 <- sapply(cors, function(x) table(x > 0))
-  lengths <- sapply(cors, function(x) length(x))
-  pct_gt_0 <- n_gt_0 / lengths
-  good <- pct_gt_0 < pct_thresh
-  best_pc_n <- which(good)[1] # Return first number of PCs with > 0 correlations < pct_thresh
-  if (is.na(best_pc_n)) base::stop("No PC-normalized bulk expression data passes threshold criteria")
-  if (verbose) cat(paste0("Regressed out ", as.character(best_pc_n), " global PCs for cell type proportion estimation\n"))
-  return(best_pc_n)
-}
-
-#' Return cell type proportions from bulk by first normalizing for PCs
-#'
-#' Calculate cell type proportions from a data frame containing bulk expression values.
-#' Uses PCA (weighted or regular) to estimate relative proportions within each cell type.
-#' This function first calculates the number of global PCs to regress out from the data. 
-#' It then uses the normalized expression data as input for PCA.
-#'
-#' @param bulk.eset Expression Set containing bulk data
-#' @param max_pc Numeric. If normalized=FALSE, the maximum number of PCs to consider
-#'   regressing out for normalization.
-#' @param cell_types Character vector. Names of cell types.
-#' @param markers Data frame with columns specifying cluster and gene,
-#'   and optionally a column for weights, typically the fold-change of the gene.
-#'   Important that the genes for each cell type are row-sorted by signficance.
-#' @param ct.col Character string. Column name specifying cluster/cell type
-#'   corresponding to each marker gene in \strong{markers}. 
-#' @param gene.col Character string. Column name specifying gene names in
-#'   \strong{markers}.
-#' @param min.gene Numeric. Min number of genes to use for each cell type.
-#' @param max.gene Numeric. Max number of genes to use for each cell type.
-#' @param weighted Boolean. Whether to use weights for gene prioritization
-#' @param w.col Character string. Column name for weights, such as "avg_logFC",
-#'  in \strong{markers}
-#' @param verbose Boolean. Whether to print log info during deconvolution.
-#'   Errors will be printed regardless. 
-#'
-#' @return A List. Slot \strong{cors} contains list of vectors with correlation
-#'   coefficients. Slot \strong{ctps} contains list of CTP objects returned by GetCTP
-#'
-GetCTPpcnorm <- function(bulk.eset, 
-                         max_pc, 
-                         cell_types, 
-                         markers, 
-                         ct_col, 
-                         gene_col, 
-                         min_gene, 
-                         max_gene, 
-                         weighted, 
-                         w_col, 
-                         verbose){
-  marker_genes <- unique(markers[,gene_col])
-  if (verbose) cat("Regressing out PCs from expression...\n")
-  bulks <- NormalizeByPC(bulk.eset, max_pc=max_pc, genes_subset=marker_genes)
-  if (verbose) cat("finished\n")
-  ctps <- list()
-  cors <- list()
-  # names(ctps) <- names(cors) <- paste0("PC", as.character(0:max_pc))
-  for (i in 0:max_pc){
-    # pc_name <- paste0("PC", as.character(i))
-    if (verbose) cat(paste0("Getting proportions from expression with ", as.character(i), " PCs out...\n"))
-    ctp <- GetCTP(bulks[[as.character(i)]], cell_types, markers, ct_col, gene_col, min_gene, max_gene, weighted, w_col, verbose)
-    if (verbose) cat("finished\n")
-    ctp_pc1 = base::lapply(ctp, function(x) x$pcs[,1])
-    ctp_pc1 = base::do.call(cbind, ctp_pc1)
-    tc <- CorTri(ctp_pc1)
-    ctps[[as.character(i)]] <- ctp
-    cors[[as.character(i)]] <- tc
-  }
-  ret <- list(cors = cors, ctps = ctps)
-  return(ret)
-}
-
 #' Performs reference-free deconvolution of bulk expression using marker genes
 #' 
 #' Estimates relative abundances of cell types from PCA-based deconvolution.
@@ -325,14 +205,10 @@ GetCTPpcnorm <- function(bulk.eset,
 #' Note that this method expects the input bulk data to be normalized, unlike
 #' the reference-based method.
 #' 
-#' @param bulk.eset Expression Set containing bulk data, 
+#' @param bulk.eset Expression Set. Normalized bulk expression data.
 #' @param markers Data frame with columns specifying cluster and gene,
 #'   and optionally a column for weights, typically the fold-change of the gene.
 #'   Important that the genes for each cell type are row-sorted by signficance.
-#' @param counts Boolean. TRUE if raw counts are given.
-#' @param normalized Boolean. TRUE if bulk data is to be treated as normalized. 
-#' @param max_pc Numeric. If normalized=FALSE, the maximum number of PCs to consider
-#'   regressing out for normalization.
 #' @param ct.col Character string. Column name specifying cluster/cell type
 #'   corresponding to each marker gene in \strong{markers}. 
 #' @param gene.col Character string. Column name specifying gene names in
@@ -344,10 +220,6 @@ GetCTPpcnorm <- function(bulk.eset,
 #'  in \strong{markers}
 #' @param unique_markers Boolean. If TRUE, subset markers to include only genes 
 #'   that are markers for only one cell type
-#' @param pct_thresh Numeric. When normalized=FALSE. A fraction between 0 and 1 
-#'   that specifies the maximum fraction of CTP-CTP correlation coefficients 
-#'   that are positive. Expression data with all positive CTP-CTP correlations 
-#'   are likely influenced by global covariation.
 #' @param verbose Boolean. Whether to print log info during deconvolution.
 #'   Errors will be printed regardless. 
 #' @return A List. Slot \strong{bulk.props} contains estimated relative cell
@@ -357,9 +229,6 @@ GetCTPpcnorm <- function(bulk.eset,
 #' @export
 ReferenceFreeDeconvolution <- function(bulk.eset, 
                                        markers,
-                                       counts=TRUE,
-                                       normalized=FALSE,
-                                       max_pc=5,
                                        ct_col="cluster",
                                        gene_col="gene",
                                        min_gene = 5,
@@ -367,7 +236,6 @@ ReferenceFreeDeconvolution <- function(bulk.eset,
                                        weighted=FALSE,
                                        w_col = "avg_logFC",
                                        unique_markers = TRUE,
-                                       pct_thresh = 0.5,
                                        verbose=TRUE){
   # Check input
   if ( ! methods::is(bulk.eset, "ExpressionSet") ) base::stop("Expression data should be in ExpressionSet")
@@ -398,30 +266,29 @@ ReferenceFreeDeconvolution <- function(bulk.eset,
     base::cat(base::sprintf("Estimating proportions for %i cell types in %i samples in bulk\n", n_ct, n_s))
   }
 
-  # Remove zero-variance genes, and un-expressed genes (if applicable)
+  # Remove zero-variance genes
   bulk.eset <- FilterZeroVarianceGenes(bulk.eset, verbose)
-  bulk.eset <- FilterUnexpressedGenes(bulk.eset, verbose)
 
   # Get cell type proportions
-  if (counts) bulk.eset <- CountsToCPM(bulk.eset)
-  n_pc=NA
-  if (!normalized){
-    cors_ctps <- GetCTPpcnorm(bulk.eset, max_pc, cell_types, markers, ct_col, gene_col, min_gene, max_gene, weighted, w_col, verbose)
-    # cors_ctps$cors has list of correlation coeffs and cors_ctps$ctps has list of ctp objects
-    n_pc <- GetNumPC(cors_ctps[["cors"]], pct_thresh, verbose)
-    ctp <- cors_ctps[["ctps"]][[n_pc]]
-  } else {
-    ctp <- GetCTP(bulk.eset, cell_types, markers, ct_col, gene_col, min_gene, max_gene, weighted, w_col, verbose)
+  ctp <- GetCTP(bulk.eset, cell_types, markers, ct_col, gene_col, min_gene, max_gene, weighted, w_col, verbose)
+
+  names(ctp) <- cell_types
+  ctp_pc1 <- base::lapply(ctp, function(x) x$pcs[,1])
+  ctp_pc1 <- base::do.call(cbind, ctp_pc1)
+  ctp_cors <- cor(ctp_pc1)
+  ctp_cors <- CorTri(ctp_cors)
+  if (verbose & all(ctp_cors > 0)){
+    base::cat("***\n")
+    base::cat(paste0("All cell type proportion estimates are correlated positively with each other. ",
+                     "Check to make sure the expression data is properly normalized\n"))
+    base::cat("***\n")
   }
 
-  names(ctp) = cell_types
-  ctp_pc1 = base::lapply(ctp, function(x) x$pcs[,1])
-  ctp_pc1 = base::do.call(cbind, ctp_pc1)
-  ctp_pc1 = base::t(ctp_pc1)
-  ctp_varexpl = base::sapply(ctp, function(x) x$sdev[1:20])
-  rownames(ctp_varexpl) = base::paste0("PC", base::as.character(1:20))
-  genes_used = base::lapply(ctp, function(x) x$genes)
+  ctp_pc1 <- base::t(ctp_pc1)
+  ctp_varexpl <- base::sapply(ctp, function(x) x$sdev[1:20])
+  rownames(ctp_varexpl) <- base::paste0("PC", base::as.character(1:20))
+  genes_used <- base::lapply(ctp, function(x) x$genes)
   if (verbose) cat("Finished estimating cell type proportions using PCA\n")
-  return(list(CTP=ctp_pc1, VarExpl=ctp_varexpl, markers=genes_used, n_pc=n_pc))
+  return(list(CTP=ctp_pc1, VarExpl=ctp_varexpl, markers=genes_used))
 }
 
