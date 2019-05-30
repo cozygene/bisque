@@ -34,4 +34,4 @@ Each method returns a list of results with estimated cell proportions/abundances
 
 To see examples of these methods on simulated data, check out the vignette:
 
-`browseVignettes("bisque")`
+`browseVignettes("Bisque")`
