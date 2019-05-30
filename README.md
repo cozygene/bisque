@@ -25,7 +25,9 @@ You can load Bisque as follows:
 `library(Bisque)`
 
 The two modes of operation described above are called as follows:
+
 `res <- Bisque::ReferenceBasedDecomposition(bulk.eset, sc.eset, markers)`
+
 `res <- Bisque::MarkerBasedDecomposition(bulk.eset, markers)`
 
 Each method returns a list of results with estimated cell proportions/abundances stored in `res$bulk.props`.
