@@ -22,4 +22,7 @@ Imports:
   methods,
   stats
 Suggests:
-  Seurat
+    Seurat,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

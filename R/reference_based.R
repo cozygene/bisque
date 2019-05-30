@@ -153,7 +153,7 @@ SupervisedTransformBulk <- function(gene, Y.train, X.train, X.pred) {
                            dimnames=base::list(base::colnames(X.pred), gene))
   }
   # If only one of X or Y has zero variance, return NaN. We shouldn't use this 
-  # gene for deconvolution.
+  # gene for decomposition.
   else if (anyNA(X.train.scaled) || anyNA(Y.train.scaled)) {
     Y.pred <- base::matrix(X.pred[gene,,drop=T] * NaN,
                            dimnames=base::list(base::colnames(X.pred), gene))
@@ -198,8 +198,7 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
   Y.center <- base::attr(Y.train.scaled, "scaled:center")
   Y.scale <- base::attr(Y.train.scaled, "scaled:scale")
   n <- base::length(Y.train.scaled)
-  # Shrinkage estimator that minimizes MSE for scaling factor, assuming Y is
-  # normal
+  # Shrinkage estimator that minimizes MSE for scaling factor
   shrink.scale <- base::sqrt(base::sum((Y.train[gene,,drop=T]-Y.center)^2)/n+1)
   X.pred.scaled <- base::scale(X.pred[gene,,drop=T])
   Y.pred <- base::matrix((X.pred.scaled * shrink.scale) + Y.center,
@@ -207,7 +206,7 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
   return(Y.pred)
 }
 
-#' Performs reference-based deconvolution of bulk expression using single-cell
+#' Performs reference-based decomposition of bulk expression using single-cell
 #' data
 #'
 #' Generates a reference profile based on single-cell data. Learns a
@@ -228,16 +227,16 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
 #'   Expression Set should contain cell type and individual labels for each
 #'   cell. Names of these fields specified by arguments below.
 #' @param markers Structure, such as character vector, containing marker genes
-#'   to be used in deconvolution. `base::unique(base::unlist(markers))` should
+#'   to be used in decomposition. `base::unique(base::unlist(markers))` should
 #'   return a simple vector containing each gene name. If no argument or NULL
-#'   provided, the method will use all available genes for deconvolution.
+#'   provided, the method will use all available genes for decomposition.
 #' @param cell.types Character string. Name of phenoData attribute in sc.eset
 #'   indicating cell type label for each cell
 #' @param subject.names Character string. Name of phenoData attribute in sc.eset
 #'   indicating individual label for each cell
 #' @param use.overlap Boolean. Whether to use and expect overlapping samples 
-#'   in deconvolution.
-#' @param verbose Boolean. Whether to print log info during deconvolution.
+#'   in decomposition.
+#' @param verbose Boolean. Whether to print log info during decomposition.
 #'   Errors will be printed regardless. 
 #' @return A list. Slot \strong{bulk.props} contains a matrix of cell type
 #'   proportion estimates with cell types as rows and individuals as columns.
@@ -245,9 +244,9 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
 #'   estimated directly from counting single-cell data. 
 #'   Slot \strong{rnorm} contains Euclidean norm of the residuals for each
 #'   individual's proportion estimates. Slot \strong{genes.used} contains
-#'   vector of genes used in deconvolution
+#'   vector of genes used in decomposition
 #' @export
-ReferenceBasedDeconvolution <- function(bulk.eset,
+ReferenceBasedDecomposition <- function(bulk.eset,
                                         sc.eset,
                                         markers=NULL,
                                         cell.types="cellType",
@@ -383,7 +382,7 @@ ReferenceBasedDeconvolution <- function(bulk.eset,
                 "for which a transformation could not be learned.\n", sep=" ")
     }
     if (sum(!indices) == 0) {
-      base::stop("Zero genes left for deconvolution.")
+      base::stop("Zero genes left for decomposition.")
     }
     Y.pred <- Y.pred[,!indices,drop=F]
     sc.ref <- sc.ref[!indices,,drop=F]

@@ -128,7 +128,7 @@ CorTri <- function(x, method="pearson"){
 #' @param weighted Boolean. Whether to use weights for gene prioritization
 #' @param w.col Character string. Column name for weights, such as "avg_logFC",
 #'  in \strong{markers}
-#' @param verbose Boolean. Whether to print log info during deconvolution.
+#' @param verbose Boolean. Whether to print log info during decomposition.
 #'   Errors will be printed regardless. 
 #'
 #' @return A List. Slot \strong{cors} contains list of vectors with correlation
@@ -148,7 +148,7 @@ GetCTP <- function(bulk,
   ctp = base::lapply(cell_types, function(ct){
                      # Get marker genes
                      markers_ct = markers[ markers[,ct_col] == ct , , drop=FALSE]
-                     ctm = base::make.unique(markers_ct[, gene_col])
+                     ctm = base::make.unique(as.character(markers_ct[, gene_col]))
                      # Get markers in common between bulk and markers data frame
                      common_markers = base::intersect(ctm, Biobase::featureNames(bulk))
                      if ( base::length(common_markers) == 0 ){
@@ -159,7 +159,7 @@ GetCTP <- function(bulk,
                        base::stop(base::paste0(base::sprintf("For cell type %s, There are less marker genes in ", ct),
                                                base::sprintf("the bulk expression set (%i) than the ", base::ncol(expr)),
                                                base::sprintf("minimum number of genes set (%i) ", min_gene),
-                                               "for PCA-based deconvolution\nSet the min_gene parameter to a lower integer."))
+                                               "for PCA-based decomposition\nSet the min_gene parameter to a lower integer."))
                      }
                      if (weighted){
                        # Get gene weights
@@ -194,9 +194,9 @@ GetCTP <- function(bulk,
   return(ctp)
 }
 
-#' Performs reference-free deconvolution of bulk expression using marker genes
+#' Performs marker-based decomposition of bulk expression using marker genes
 #' 
-#' Estimates relative abundances of cell types from PCA-based deconvolution.
+#' Estimates relative abundances of cell types from PCA-based decomposition.
 #' Uses a list of marker genes to subset the expression data, and returns the 
 #' first PC of each sub-matrix as the cell type fraction estimates.
 #' Optionally, weights for each marker gene can be used to prioritize genes
@@ -220,14 +220,14 @@ GetCTP <- function(bulk,
 #'  in \strong{markers}
 #' @param unique_markers Boolean. If TRUE, subset markers to include only genes 
 #'   that are markers for only one cell type
-#' @param verbose Boolean. Whether to print log info during deconvolution.
+#' @param verbose Boolean. Whether to print log info during decomposition.
 #'   Errors will be printed regardless. 
 #' @return A List. Slot \strong{bulk.props} contains estimated relative cell
 #'   type abundances. Slot \strong{var.explained} contains variance explained by
 #'   first 20 PCs for cell type marker genes. Slot \strong{genes.used} contains
-#'   vector of genes used for deconvolution.
+#'   vector of genes used for decomposition.
 #' @export
-ReferenceFreeDeconvolution <- function(bulk.eset, 
+MarkerBasedDecomposition <- function(bulk.eset, 
                                        markers,
                                        ct_col="cluster",
                                        gene_col="gene",
@@ -289,6 +289,6 @@ ReferenceFreeDeconvolution <- function(bulk.eset,
   rownames(ctp_varexpl) <- base::paste0("PC", base::as.character(1:20))
   genes_used <- base::lapply(ctp, function(x) x$genes)
   if (verbose) cat("Finished estimating cell type proportions using PCA\n")
-  return(list(CTP=ctp_pc1, VarExpl=ctp_varexpl, markers=genes_used))
+  return(list(bulk.props=ctp_pc1, var.explained=ctp_varexpl, genes.used=genes_used))
 }
 

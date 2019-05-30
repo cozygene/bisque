@@ -1,6 +1,8 @@
+inst/doc
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
 .Rbuildignore
 *.Rproj
+*.html

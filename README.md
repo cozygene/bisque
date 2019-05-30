@@ -1,6 +1,6 @@
 # Bisque
 
-An accurate method for reference-based or reference-free deconvolution of bulk expression data using single-cell information.
+An accurate method for reference-based or reference-free decomposition of bulk expression data using single-cell information.
 
 ## Install
 
@@ -8,5 +8,5 @@ An accurate method for reference-based or reference-free deconvolution of bulk e
 * Load in R with `devtools::load_all("path/to/bisque")`
 
 ## Usage
-`Bisque::ReferenceBasedDeconvolution(bulk.eset, sc.eset, markers)`
-`Bisque::ReferenceFreeDeconvolution(bulk.eset, markers)`
+`Bisque::ReferenceBasedDecomposition(bulk.eset, sc.eset, markers)`
+`Bisque::ReferenceFreeDecomposition(bulk.eset, markers)`
