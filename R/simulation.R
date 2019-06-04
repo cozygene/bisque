@@ -10,7 +10,7 @@
 #' @param individual Character. ID of individual that the cell is from.
 #' @param barcode.length Integer. Length of nucleotide barcode.
 #' @return Simulated barcode for cell from an individual
-simulateBarcode <- function(index, individual, barcode.length){
+SimulateBarcode <- function(index, individual, barcode.length){
   index <- index - 1
   barcode <- rep(0, barcode.length)
   for (i in 1:barcode.length){
@@ -38,7 +38,7 @@ simulateBarcode <- function(index, individual, barcode.length){
 #'   `bulk.eset`, as well as true proportions in `props` and marker genes
 #'   in `markers`.
 #' @export
-simulateData <- function(n.ind, n.genes, n.cells, cell.types, avg.props){
+SimulateData <- function(n.ind, n.genes, n.cells, cell.types, avg.props){
   true.props <- stats::rmultinom(n.ind, n.cells, avg.props)/n.cells
   colnames(true.props) <- as.character(1:n.ind)
   rownames(true.props) <- cell.types
@@ -78,7 +78,7 @@ simulateData <- function(n.ind, n.genes, n.cells, cell.types, avg.props){
         cell.type.labels <- c(cell.type.labels, rep(cell.type, n.cells.type))
       }
     }
-    colnames(counts) <- sapply(1:n.cells, function(x) simulateBarcode(x, ind, barcode.length))
+    colnames(counts) <- sapply(1:n.cells, function(x) SimulateBarcode(x, ind, barcode.length))
     bulk.data <- cbind(bulk.data, rowSums(counts))
     sc.data <- cbind(sc.data, counts)
     individual.labels <- c(individual.labels, rep(as.character(ind), n.cells))
