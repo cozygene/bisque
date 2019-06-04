@@ -1,5 +1,7 @@
 # Bisque
 
+[![Travis build status](https://travis-ci.org/brandonjew/bisque.svg?branch=master)](https://travis-ci.org/brandonjew/bisque)
+
 An R toolkit for accurate and efficient estimation of cell composition ('decomposition') from bulk expression data with single-cell information.
 
 Bisque provides two modes of operation:
