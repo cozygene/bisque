@@ -137,7 +137,7 @@ knitr::kable(marker.data.frame)
 
 Here's how to call the marker-based decomposition method:
 ```{r marker_based}
-res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers)
+res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers, weighted=F)
 ```
 A list is returned with decomposition estimates in slot ```bulk.props```.
 
