@@ -68,7 +68,7 @@ set.seed(42)
 cell.types <- c("Neurons", "Astrocytes", "Oligodendrocytes", "Microglia", "Endothelial Cells")
 avg.props <- c(.5, .2, .2, .07, .03)
 
-expr.data <- BisqueRNA::simulateData(n.ind=2, n.genes=10, n.cells=10, cell.types=cell.types, avg.props=avg.props)
+expr.data <- BisqueRNA::SimulateData(n.ind=2, n.genes=10, n.cells=10, cell.types=cell.types, avg.props=avg.props)
 sc.eset <- expr.data$sc.eset
 bulk.eset <- expr.data$bulk.eset
 ```
@@ -85,13 +85,13 @@ Note that if you have samples with both single-cell and bulk RNA-seq data, their
 
 ## Reference-based decomposition
 
-We will use data simulated under a simple model (code for simulateData() can be found in R/simulation.R).
+We will use data simulated under a simple model (code for SimulateData() can be found in R/simulation.R).
 We simulate single-cell and bulk RNA-seq counts for 10 individuals. We remove 5 individuals from the single-cell data. We will estimate the cell composition for these 5 individuals.
 
 ```{r example_input_2}
 cell.types <- c("Neurons", "Astrocytes", "Oligodendrocytes", "Microglia", "Endothelial Cells")
 avg.props <- c(.5, .2, .2, .07, .03)
-sim.data <- simulateData(n.ind=10, n.genes=100, n.cells=500, cell.types=cell.types, avg.props=avg.props)
+sim.data <- SimulateData(n.ind=10, n.genes=100, n.cells=500, cell.types=cell.types, avg.props=avg.props)
 sc.eset <- sim.data$sc.eset[,sim.data$sc.eset$SubjectName %in% as.character(6:10)]
 bulk.eset <- sim.data$bulk.eset
 true.props <- sim.data$props
