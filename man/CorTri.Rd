@@ -9,7 +9,8 @@ CorTri(x, method = "pearson")
 \arguments{
 \item{x}{Data frame or matrix. Column vectors are correlated}
 
-\item{method}{Character string. Name of method passed to cor. Pearson by default}
+\item{method}{Character string. Name of method passed to cor. 
+Pearson by default.}
 }
 \value{
 cors Numeric vector. Correlation coefficients of pairs

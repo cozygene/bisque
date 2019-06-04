@@ -1,6 +1,6 @@
-Package: Bisque
-Title: Deconvolution of bulk expression using single-cell information
-Version: 0.1
+Package: BisqueRNA
+Title: Decomposition of Bulk Expression with Single-Cell Sequencing
+Version: 1.0
 Authors@R: c(
   person(given = 'Brandon', family = 'Jew', email = 'brandon.jew@ucla.edu', role = c('aut', 'cre')),
   person(given = 'Marcus', family = 'Alvarez', role = 'aut')
@@ -8,10 +8,10 @@ Authors@R: c(
 Description: Bisque provides tools to accurately estimate cell type abundances 
     from heterogeneous bulk expression. A reference-based method utilizes
     single-cell information to generate a signature matrix and transformation
-    of bulk expression for accurate regression based estimates. A reference-free
+    of bulk expression for accurate regression based estimates. A marker-based
     method utilizes known cell-specific marker genes to measure relative
     abundances across samples. 
-Depends: R (>= 3.5.1)
+Depends: R (>= 3.5.0)
 License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -23,6 +23,8 @@ Imports:
   stats
 Suggests:
     Seurat,
+    plyr,
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat
 VignetteBuilder: knitr

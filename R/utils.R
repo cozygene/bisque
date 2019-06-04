@@ -24,7 +24,9 @@
 SeuratToExpressionSet <- function(seurat.object, delimiter, position,
                                   version = c("v2", "v3")) {
   if (! "Seurat" %in% base::.packages()) {
-    base::stop("Seurat package is not attached")
+    base::warning(base::cat("Seurat package is not attached. ",
+                            "ExpressionSet may be malformed. ",
+                            "Please load Seurat library.\n", sep=""))
   }
   version <- base::match.arg(version)
   if (version == "v2") {
@@ -63,7 +65,7 @@ SeuratToExpressionSet <- function(seurat.object, delimiter, position,
   sc.pdata <- methods::new("AnnotatedDataFrame",
                            data=sc.pheno,
                            varMetadata=sc.meta)
-  sc.data <- base::as.matrix(get.raw.data(seurat.object)[,sample.ids])
+  sc.data <- base::as.matrix(get.raw.data(seurat.object)[,sample.ids,drop=F])
   sc.eset <- Biobase::ExpressionSet(assayData=sc.data,
                                     phenoData=sc.pdata)
   return(sc.eset)
@@ -95,7 +97,7 @@ CountsToCPM <- function(eset) {
 FilterZeroVarianceGenes <- function(eset, verbose=TRUE) {
   indices <- (base::apply(Biobase::exprs(eset), 1, stats::var) != 0)
   indices <- indices & (! base::is.na(indices))
-  if (base::sum(indices) > 0) {
+  if (base::sum(indices) < base::length(indices)) {
     eset <-
       Biobase::ExpressionSet(assayData=Biobase::exprs(eset)[indices,,drop=F],
                              phenoData=eset@phenoData)
@@ -116,7 +118,7 @@ FilterZeroVarianceGenes <- function(eset, verbose=TRUE) {
 FilterUnexpressedGenes <- function(eset, verbose=TRUE) {
   indices <- (base::apply(Biobase::exprs(eset), 1, base::sum) != 0)
   indices <- indices & (! base::is.na(indices))
-  if (base::sum(indices) > 0) {
+  if (base::sum(indices) < base::length(indices)) {
     eset <-
       Biobase::ExpressionSet(assayData=Biobase::exprs(eset)[indices,,drop=F],
                              phenoData=eset@phenoData)

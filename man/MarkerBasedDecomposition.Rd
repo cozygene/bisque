@@ -16,26 +16,26 @@ MarkerBasedDecomposition(bulk.eset, markers, ct_col = "cluster",
 and optionally a column for weights, typically the fold-change of the gene.
 Important that the genes for each cell type are row-sorted by signficance.}
 
+\item{ct_col}{Character string. Column name specifying cluster/cell type
+corresponding to each marker gene in \strong{markers}.}
+
+\item{gene_col}{Character string. Column name specifying gene names in
+\strong{markers}.}
+
+\item{min_gene}{Numeric. Min number of genes to use for each cell type.}
+
+\item{max_gene}{Numeric. Max number of genes to use for each cell type.}
+
 \item{weighted}{Boolean. Whether to use weights for gene prioritization}
+
+\item{w_col}{Character string. Column name for weights, such as "avg_logFC",
+in \strong{markers}}
 
 \item{unique_markers}{Boolean. If TRUE, subset markers to include only genes 
 that are markers for only one cell type}
 
 \item{verbose}{Boolean. Whether to print log info during decomposition.
 Errors will be printed regardless.}
-
-\item{ct.col}{Character string. Column name specifying cluster/cell type
-corresponding to each marker gene in \strong{markers}.}
-
-\item{gene.col}{Character string. Column name specifying gene names in
-\strong{markers}.}
-
-\item{min.gene}{Numeric. Min number of genes to use for each cell type.}
-
-\item{max.gene}{Numeric. Max number of genes to use for each cell type.}
-
-\item{w.col}{Character string. Column name for weights, such as "avg_logFC",
-in \strong{markers}}
 }
 \value{
 A List. Slot \strong{bulk.props} contains estimated relative cell

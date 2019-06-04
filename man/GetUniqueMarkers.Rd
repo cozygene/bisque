@@ -9,7 +9,8 @@ GetUniqueMarkers(x, gene_col = "gene")
 \arguments{
 \item{x}{Data frame. Contains column with marker gene names}
 
-\item{gene_col}{Character string. Name of the column that contains the marker genes}
+\item{gene_col}{Character string. Name of the column that contains
+the marker genes}
 }
 \value{
 x Data frame. Markers with non-unique markers removed

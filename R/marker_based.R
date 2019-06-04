@@ -1,6 +1,7 @@
 #' Estimate cell type proportions using first PC of expression matrix
 #' 
-#' @param x A sample by gene bulk expression matrix. Genes should be marker genes
+#' @param x A sample by gene bulk expression matrix. Genes should be marker
+#'   genes
 #' @param weighted Boolean. If weighted=TRUE, multiply scaled gene expression by
 #'   gene weights
 #' @param w Numeric vector. Weights of genes 
@@ -14,10 +15,11 @@ EstimatePCACellTypeProportions <- function(x, weighted=FALSE, w=NULL){
   if (weighted) {
     # Intersect gene names of weights and column names of x
     common.markers <- base::intersect( base::colnames(x), base::names(w) )
-    if ( length(common.markers) == 0 ) {
-      base::stop(base::paste0("Genes from weights w do not match with column ",
-                             "names of expression matrix x."))
-    }
+    # not sure if this will ever happen, since we check this at line 268
+    #if ( length(common.markers) == 0 ) {
+    #  base::stop(base::paste0("Genes from weights w do not match with column ",
+    #                         "names of expression matrix x."))
+    #}
     x <- x[,common.markers]
     w <- w[common.markers]
     wd <- base::diag(w)
@@ -83,12 +85,13 @@ GetNumGenes = function(x, min.gene = 25, max.gene = 200){
 #' returns a new data frame with non-unique markers removed.
 #'
 #' @param x Data frame. Contains column with marker gene names
-#' @param gene_col Character string. Name of the column that contains the marker genes
-#'
+#' @param gene_col Character string. Name of the column that contains
+#'   the marker genes
 #' @return x Data frame. Markers with non-unique markers removed
 #'
 GetUniqueMarkers <- function(x, gene_col="gene"){
-  keep <- ! ( duplicated(x[,gene_col], fromLast = FALSE) | duplicated(x[,gene_col], fromLast = TRUE) )
+  keep <- ! (duplicated(x[,gene_col], fromLast = FALSE) |
+             duplicated(x[,gene_col], fromLast = TRUE) )
   return(x[keep,])
 }
 
@@ -99,42 +102,42 @@ GetUniqueMarkers <- function(x, gene_col="gene"){
 #' in a vector.
 #'
 #' @param x Data frame or matrix. Column vectors are correlated
-#' @param method Character string. Name of method passed to cor. Pearson by default
-#'
+#' @param method Character string. Name of method passed to cor. 
+#'   Pearson by default.
 #' @return cors Numeric vector. Correlation coefficients of pairs
 #'
 CorTri <- function(x, method="pearson"){
-  cors <- cor(x, method=method)
-  cors <- cors[lower.tri(cors)]
+  cors <- stats::cor(x, method=method)
+  cors <- cors[base::lower.tri(cors)]
   return(cors)
 }
 
 #' Return cell type proportions from bulk
 #'
-#' Calculate cell type proportions from a data frame containing bulk expression values.
-#' Uses PCA (weighted or regular) to estimate relative proportions within each cell type.
+#' Calculate cell type proportions from a data frame containing bulk expression
+#' values. Uses PCA (weighted or regular) to estimate relative proportions
+#' within each cell type.
 #'
-#' @param bulk.eset Expression Set containing bulk data
+#' @param bulk Expression Set containing bulk data
 #' @param cell_types Character vector. Names of cell types.
 #' @param markers Data frame with columns specifying cluster and gene,
 #'   and optionally a column for weights, typically the fold-change of the gene.
 #'   Important that the genes for each cell type are row-sorted by signficance.
-#' @param ct.col Character string. Column name specifying cluster/cell type
+#' @param ct_col Character string. Column name specifying cluster/cell type
 #'   corresponding to each marker gene in \strong{markers}. 
-#' @param gene.col Character string. Column name specifying gene names in
+#' @param gene_col Character string. Column name specifying gene names in
 #'   \strong{markers}.
-#' @param min.gene Numeric. Min number of genes to use for each cell type.
-#' @param max.gene Numeric. Max number of genes to use for each cell type.
+#' @param min_gene Numeric. Min number of genes to use for each cell type.
+#' @param max_gene Numeric. Max number of genes to use for each cell type.
 #' @param weighted Boolean. Whether to use weights for gene prioritization
-#' @param w.col Character string. Column name for weights, such as "avg_logFC",
+#' @param w_col Character string. Column name for weights, such as "avg_logFC",
 #'  in \strong{markers}
 #' @param verbose Boolean. Whether to print log info during decomposition.
 #'   Errors will be printed regardless. 
 #'
 #' @return A List. Slot \strong{cors} contains list of vectors with correlation
-#'   coefficients. Slot \strong{ctps} contains list of CTP objects returned by GetCTP
-#'
-#'
+#'   coefficients. Slot \strong{ctps} contains list of CTP objects returned by
+#'   GetCTP
 GetCTP <- function(bulk,
                    cell_types,
                    markers,
@@ -180,11 +183,13 @@ GetCTP <- function(bulk,
                        ret = EstimatePCACellTypeProportions(expr)
                      }
                      # Flip the sign of the first PC if negatively correlated with most genes
-                     cors = cor(expr, ret$pcs[,1])
+                     cors = stats::cor(expr, ret$pcs[,1])
                      n_pos = sum(cors[,1] > 0)
-                     if (n_pos/base::length(cors[,1]) < (0.5)) ret$pcs[,1] = ret$pcs[,1] * -1
+                     if (n_pos/base::length(cors[,1]) < (0.5)) {
+                       ret$pcs[,1] = ret$pcs[,1] * -1
+                     }
                      if (verbose){
-                       cors = cor(expr, ret$pcs[,1]); n_pos = sum(cors[,1] > 0)
+                       cors = stats::cor(expr, ret$pcs[,1]); n_pos = sum(cors[,1] > 0)
                        pct <- as.character(as.integer(100 * round(n_pos/base::length(cors[,1]), 2)))
                        clen <- as.character(base::length(cors[,1]))
                        base::cat(base::paste0(pct, "% of ", clen, " marker genes correlate positively with PC1 for cell type ", ct, "\n"))
@@ -209,14 +214,14 @@ GetCTP <- function(bulk,
 #' @param markers Data frame with columns specifying cluster and gene,
 #'   and optionally a column for weights, typically the fold-change of the gene.
 #'   Important that the genes for each cell type are row-sorted by signficance.
-#' @param ct.col Character string. Column name specifying cluster/cell type
+#' @param ct_col Character string. Column name specifying cluster/cell type
 #'   corresponding to each marker gene in \strong{markers}. 
-#' @param gene.col Character string. Column name specifying gene names in
+#' @param gene_col Character string. Column name specifying gene names in
 #'   \strong{markers}.
-#' @param min.gene Numeric. Min number of genes to use for each cell type.
-#' @param max.gene Numeric. Max number of genes to use for each cell type.
+#' @param min_gene Numeric. Min number of genes to use for each cell type.
+#' @param max_gene Numeric. Max number of genes to use for each cell type.
 #' @param weighted Boolean. Whether to use weights for gene prioritization
-#' @param w.col Character string. Column name for weights, such as "avg_logFC",
+#' @param w_col Character string. Column name for weights, such as "avg_logFC",
 #'  in \strong{markers}
 #' @param unique_markers Boolean. If TRUE, subset markers to include only genes 
 #'   that are markers for only one cell type
@@ -238,10 +243,13 @@ MarkerBasedDecomposition <- function(bulk.eset,
                                        unique_markers = TRUE,
                                        verbose=TRUE){
   # Check input
-  if ( ! methods::is(bulk.eset, "ExpressionSet") ) base::stop("Expression data should be in ExpressionSet")
+  if ( ! methods::is(bulk.eset, "ExpressionSet") ) {
+    base::stop("Expression data should be in ExpressionSet")
+  }
   if (min_gene > max_gene){
     base::stop(base::paste0(base::sprintf("min_gene (set at %i) ", min_gene),
-                            base::sprintf("must be less than or equal to max_gene (set at %i)\n", max_gene)))
+                            "must be less than or equal to max_gene ",
+                            base::sprintf("(set at %i)\n", max_gene)))
   }
 
   # Get unique markers if applicable
@@ -250,11 +258,15 @@ MarkerBasedDecomposition <- function(bulk.eset,
     markers <- GetUniqueMarkers(markers, gene_col=gene_col)
     n_genes_clust <- table(markers[,ct_col])
     if (any(n_genes_clust < min_gene)) {
-      base::stop(paste0("Clusters must have a minimum of ", str(min_gene), " unique marker genes"))
+      base::stop(paste0("Clusters must have a minimum of ",
+                        base::as.character(min_gene),
+                        " unique marker genes"))
     }
   }
   cg <- intersect(unique(markers[,gene_col]), rownames(bulk.eset))
-  if (length(cg) == 0) base::stop(cat("No overlapping genes between markers and bulk.eset\n"))
+  if (length(cg) == 0) {
+    base::stop(cat("No overlapping genes between markers and bulk.eset\n"))
+  }
   markers <- markers[markers[,gene_col] %in% cg,]
 
   # Set variables
@@ -263,24 +275,28 @@ MarkerBasedDecomposition <- function(bulk.eset,
   n_ct <- length(cell_types)
   n_s <- base::ncol(bulk.eset)
   if (verbose){
-    base::cat(base::sprintf("Estimating proportions for %i cell types in %i samples in bulk\n", n_ct, n_s))
+    base::cat(base::paste0("Estimating proportions for ",
+                           base::sprintf("%i cell types in %i samples\n",
+                                         n_ct, n_s)))
   }
 
   # Remove zero-variance genes
   bulk.eset <- FilterZeroVarianceGenes(bulk.eset, verbose)
 
   # Get cell type proportions
-  ctp <- GetCTP(bulk.eset, cell_types, markers, ct_col, gene_col, min_gene, max_gene, weighted, w_col, verbose)
+  ctp <- GetCTP(bulk.eset, cell_types, markers, ct_col, gene_col,
+                min_gene, max_gene, weighted, w_col, verbose)
 
   names(ctp) <- cell_types
   ctp_pc1 <- base::lapply(ctp, function(x) x$pcs[,1])
   ctp_pc1 <- base::do.call(cbind, ctp_pc1)
-  ctp_cors <- cor(ctp_pc1)
+  ctp_cors <- stats::cor(ctp_pc1)
   ctp_cors <- CorTri(ctp_cors)
   if (verbose & all(ctp_cors > 0)){
     base::cat("***\n")
-    base::cat(paste0("All cell type proportion estimates are correlated positively with each other. ",
-                     "Check to make sure the expression data is properly normalized\n"))
+    base::cat(paste0("WARN: All cell type proportion estimates are correlated ",
+                     "positively with each other. Check to make sure the ",
+                     "expression data is properly normalized\n"))
     base::cat("***\n")
   }
 
@@ -289,6 +305,8 @@ MarkerBasedDecomposition <- function(bulk.eset,
   rownames(ctp_varexpl) <- base::paste0("PC", base::as.character(1:20))
   genes_used <- base::lapply(ctp, function(x) x$genes)
   if (verbose) cat("Finished estimating cell type proportions using PCA\n")
-  return(list(bulk.props=ctp_pc1, var.explained=ctp_varexpl, genes.used=genes_used))
+  return(list(bulk.props=ctp_pc1,
+              var.explained=ctp_varexpl,
+              genes.used=genes_used))
 }
 

@@ -7,7 +7,8 @@
 EstimatePCACellTypeProportions(x, weighted = FALSE, w = NULL)
 }
 \arguments{
-\item{x}{A sample by gene bulk expression matrix. Genes should be marker genes}
+\item{x}{A sample by gene bulk expression matrix. Genes should be marker
+genes}
 
 \item{weighted}{Boolean. If weighted=TRUE, multiply scaled gene expression by
 gene weights}

@@ -22,16 +22,16 @@ This method captures relative abundances of a cell type across individuals. Note
 ## Getting Started
 You can load Bisque as follows:
 
-`library(Bisque)`
+`library(BisqueRNA)`
 
 The two modes of operation described above are called as follows:
 
-`res <- Bisque::ReferenceBasedDecomposition(bulk.eset, sc.eset, markers)`
+`res <- BisqueRNA::ReferenceBasedDecomposition(bulk.eset, sc.eset, markers)`
 
-`res <- Bisque::MarkerBasedDecomposition(bulk.eset, markers)`
+`res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers)`
 
 Each method returns a list of results with estimated cell proportions/abundances stored in `res$bulk.props`.
 
 To see examples of these methods on simulated data, check out the vignette:
 
-`browseVignettes("Bisque")`
+`browseVignettes("BisqueRNA")`

@@ -280,9 +280,6 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   }
   if (use.overlap) {
     samples <- GetOverlappingSamples(sc.eset, bulk.eset, subject.names, verbose)
-    if (base::length(samples$overlapping) == 0) {
-      base::stop("use.overlap=TRUE but no overlapping samples found.")
-    }
   }
   if (base::is.null(markers)) {
     markers <- Biobase::featureNames(sc.eset)

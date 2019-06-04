@@ -3,3 +3,4 @@
 export(MarkerBasedDecomposition)
 export(ReferenceBasedDecomposition)
 export(SeuratToExpressionSet)
+export(simulateData)

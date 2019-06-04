@@ -21,7 +21,7 @@ This vignette provides a basic example of using Bisque to decompose bulk express
 
 ```{r load, echo=T, results='hide', message=F, warning=F}
 library(Biobase)
-library(Bisque)
+library(BisqueRNA)
 ```
 
 ## Input Format
@@ -58,7 +58,7 @@ sc.eset <- Biobase::ExpressionSet(assayData=sc.counts.matrix,
 If your single-cell data (from 10x platform) is in a Seurat object with cell type assignments, Bisque includes a function that will automatically convert this object to an ExpressionSet:
 
 ```{r eval=FALSE}
-sc.eset <- Bisque::SeuratToExpressionSet(seurat.obj, delimiter="-", position=2, version="v3")
+sc.eset <- BisqueRNA::SeuratToExpressionSet(seurat.obj, delimiter="-", position=2, version="v3")
 ```
 
 The delimiter and position arguments describe the barcode format of 10x single-cell data. For example, barcodes of "ATCGATCG-1" and "ATGCAAGT-2" have the individual ID in position 2 after splitting by the delimiter '-'. 
@@ -68,74 +68,7 @@ set.seed(42)
 cell.types <- c("Neurons", "Astrocytes", "Oligodendrocytes", "Microglia", "Endothelial Cells")
 avg.props <- c(.5, .2, .2, .07, .03)
 
-# Generate cell barcodes from index
-makeBarcode <- function(index, individual, barcode.length){
-  index <- index - 1
-  barcode <- rep(0, barcode.length)
-  for (i in 1:barcode.length){
-    barcode[i] <- index %% 4
-    index <- index %/% 4
-  }
-  barcode <- plyr::mapvalues(barcode, from=0:3, to=c("A","T","C","G"), warn_missing = F)
-  barcode <- paste(c(barcode,'-', individual), collapse="")
-  return(barcode)
-}
-
-simulateExpr <- function(n.ind, n.genes, n.cells){
-  true.props <- rmultinom(n.ind, n.cells, avg.props)/n.cells
-  colnames(true.props) <- as.character(1:n.ind)
-  rownames(true.props) <- cell.types
-  reference <- replicate(length(cell.types), rgeom(n.genes, prob=0.5))
-  colnames(reference) <- cell.types
-  rownames(reference) <- paste("Gene", 1:n.genes)
-  markers <- data.frame(gene=paste("Gene", 1:n.genes),
-                        cluster=sapply(1:n.genes, function(x) names(which.max(reference[x,]))))
-  barcode.length <- max(ceiling(log(n.cells, base=4)), 4)
-  sc.data <- NULL
-  bulk.data <- NULL
-  individual.labels <- NULL
-  cell.type.labels <- NULL
-  for (ind in 1:n.ind){
-    counts <- NULL
-    for (cell.type in cell.types){
-      n.cells.type <- n.cells*true.props[cell.type,ind]
-      if (n.cells.type > 0) {
-        new.counts <- t(sapply(reference[,cell.type], 
-                               function(l){
-                                 rpois(n.cells.type,l)
-                               }))
-        if (n.cells.type == 1){
-          new.counts <- t(new.counts)
-        }
-        counts <- cbind(counts, new.counts)
-        cell.type.labels <- c(cell.type.labels, rep(cell.type, n.cells.type))
-      }
-    }
-    colnames(counts) <- sapply(1:n.cells, function(x) makeBarcode(x, ind, barcode.length))
-    bulk.data <- cbind(bulk.data, rowSums(counts))
-    sc.data <- cbind(sc.data, counts)
-    individual.labels <- c(individual.labels, rep(as.character(ind), n.cells))
-  }
-  rownames(bulk.data) <- paste("Gene", 1:n.genes)
-  rownames(sc.data) <- paste("Gene", 1:n.genes)
-  sc.pheno <- data.frame(check.names=F, check.rows=F,
-                         stringsAsFactors=F,
-                         row.names=colnames(sc.data),
-                         SubjectName=individual.labels,
-                         cellType=cell.type.labels)
-  sc.meta <- data.frame(labelDescription=c("SubjectName",
-                                           "cellType"),
-                        row.names=c("SubjectName",
-                                    "cellType"))
-  sc.pdata <- new("AnnotatedDataFrame",
-                  data=sc.pheno,
-                  varMetadata=sc.meta)
-  sc.eset <- Biobase::ExpressionSet(assayData=sc.data,
-                                    phenoData=sc.pdata)
-  bulk.eset <- Biobase::ExpressionSet(assayData=bulk.data)
-  return(list(sc.eset=sc.eset, bulk.eset=bulk.eset, props=true.props, markers=markers))
-}
-expr.data <- simulateExpr(n.ind=2, n.genes=10, n.cells=10)
+expr.data <- BisqueRNA::simulateData(n.ind=2, n.genes=10, n.cells=10, cell.types=cell.types, avg.props=avg.props)
 sc.eset <- expr.data$sc.eset
 bulk.eset <- expr.data$bulk.eset
 ```
@@ -152,11 +85,13 @@ Note that if you have samples with both single-cell and bulk RNA-seq data, their
 
 ## Reference-based decomposition
 
-We will use data simulated under a simple model (code can be seen in the vignette source RMD file).
+We will use data simulated under a simple model (code for simulateData() can be found in R/simulation.R).
 We simulate single-cell and bulk RNA-seq counts for 10 individuals. We remove 5 individuals from the single-cell data. We will estimate the cell composition for these 5 individuals.
 
 ```{r example_input_2}
-sim.data <- simulateExpr(n.ind=10, n.genes=100, n.cells=500)
+cell.types <- c("Neurons", "Astrocytes", "Oligodendrocytes", "Microglia", "Endothelial Cells")
+avg.props <- c(.5, .2, .2, .07, .03)
+sim.data <- simulateData(n.ind=10, n.genes=100, n.cells=500, cell.types=cell.types, avg.props=avg.props)
 sc.eset <- sim.data$sc.eset[,sim.data$sc.eset$SubjectName %in% as.character(6:10)]
 bulk.eset <- sim.data$bulk.eset
 true.props <- sim.data$props
@@ -171,7 +106,7 @@ By default, Bisque uses all genes for decomposition. However, you may supply a l
 Here's how to call the reference-based decomposition method:
 
 ```{r reference_based}
-res <- Bisque::ReferenceBasedDecomposition(bulk.eset, sc.eset, markers=NULL, use.overlap=TRUE)
+res <- BisqueRNA::ReferenceBasedDecomposition(bulk.eset, sc.eset, markers=NULL, use.overlap=TRUE)
 ```
 
 A list is returned with decomposition estimates in slot ```bulk.props```.
@@ -202,7 +137,7 @@ knitr::kable(marker.data.frame)
 
 Here's how to call the marker-based decomposition method:
 ```{r marker_based}
-res <- Bisque::MarkerBasedDecomposition(bulk.eset, markers)
+res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers)
 ```
 A list is returned with decomposition estimates in slot ```bulk.props```.
 
