@@ -8,3 +8,8 @@ jobs:
     - stage: "Build"
       bioc_packages:
         - Biobase
+r_packages:
+  - covr
+
+after_success:
+  - Rscript -e 'library(covr); codecov()'
