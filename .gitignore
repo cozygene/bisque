@@ -3,6 +3,5 @@ inst/doc
 .Rhistory
 .RData
 .Ruserdata
-.Rbuildignore
 *.Rproj
 *.html
