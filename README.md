@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/cozygene/bisque.svg?branch=master)](https://travis-ci.org/cozygene/bisque)
 
+[![codecov](https://codecov.io/gh/cozygene/bisque/branch/master/graph/badge.svg)](https://codecov.io/gh/cozygene/bisque)
+
 An R toolkit for accurate and efficient estimation of cell composition ('decomposition') from bulk expression data with single-cell information.
 
 Bisque provides two modes of operation:

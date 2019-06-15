@@ -27,4 +27,5 @@ Suggests:
     knitr,
     rmarkdown,
     testthat
+BugReports: https://github.com/cozygene/bisque/issues
 VignetteBuilder: knitr
