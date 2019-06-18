@@ -31,9 +31,9 @@ test_that("Produces output for simulated data", {
   bulk.eset <- Biobase::ExpressionSet(assayData = matrix(1:16, nrow=4, ncol=4))
   markers <- data.frame(gene=as.character(1:4), cluster=rep('a', 4), avg_logFC=rep(.3, 4))
   # weighted
-  res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers, min_gene=4, weighted=T)
+  expect_warning(res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers, min_gene=4, weighted=T))
   expect_true("bulk.props" %in% unlist(attributes(res)))
   # unweighted
-  res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers, min_gene=4, weighted=F)
+  expect_warning(res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers, min_gene=4, weighted=F))
   expect_true("bulk.props" %in% unlist(attributes(res)))
 })

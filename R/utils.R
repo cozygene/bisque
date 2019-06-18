@@ -20,7 +20,7 @@
 #' @return sc.eset Expression set containing relevant phenotype and individual
 #'   data, \emph{cellType} and \emph{SubjectName}.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   library(Seurat)
 #'   seurat.object <- readRDS("seurat.v3.object.rds") # For illustration only
 #'   # Assuming barcodes are of the form "<BARCODE>-<INDIVIDUAL_ID>"
@@ -32,9 +32,9 @@
 SeuratToExpressionSet <- function(seurat.object, delimiter, position,
                                   version = c("v2", "v3")) {
   if (! "Seurat" %in% base::.packages()) {
-    base::warning(base::cat("Seurat package is not attached. ",
-                            "ExpressionSet may be malformed. ",
-                            "Please load Seurat library.\n", sep=""))
+    base::warning("Seurat package is not attached. ",
+                  "ExpressionSet may be malformed. ",
+                  "Please load Seurat library.")
   }
   version <- base::match.arg(version)
   if (version == "v2") {

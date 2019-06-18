@@ -264,21 +264,18 @@ ReferenceBasedDecomposition <- function(bulk.eset,
     base::stop("Expression data should be in ExpressionSet")
   }
   else if (! cell.types %in% Biobase::varLabels(sc.eset)) {
-    base::stop(base::cat(base::sprintf("Cell type label \"%s\"", cell.types),
-                         "not found in single-cell ExpressionSet varLabels.",
-                         sep=" "))
+    base::stop(base::sprintf("Cell type label \"%s\" ", cell.types),
+               "not found in single-cell ExpressionSet varLabels.")
   }
   else if (! subject.names %in% Biobase::varLabels(sc.eset)) {
-    base::stop(base::cat(base::sprintf("Individual label \"%s\"",
-                                       subject.names),
-                         "not found in single-cell ExpressionSet varLabels.",
-                         sep=" "))
+    base::stop(base::sprintf("Individual label \"%s\"", subject.names),
+               " not found in single-cell ExpressionSet varLabels.")
   }
   n.cell.types <-
     base::length(base::levels(base::factor(sc.eset[[cell.types]])))
   if (n.cell.types == 1) {
-    base::stop(base::cat("Single-cell pheno data indicates only one cell type",
-                         "present. No need for decomposition.", sep=" "))
+    base::stop("Single-cell pheno data indicates only one cell type",
+               " present. No need for decomposition.")
   }
   if (verbose) {
     base::message(base::sprintf("Decomposing into %i cell types.",
@@ -315,9 +312,8 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   genes <- base::intersect(Biobase::featureNames(sc.eset),
                            Biobase::featureNames(bulk.eset))
   if (base::length(genes) == 0) {
-    base::stop(base::cat("Zero genes remaining after filtering and",
-                         "intersecting bulk, single-cell, and marker genes.",
-                         sep=" "))
+    base::stop("Zero genes remaining after filtering and ",
+               "intersecting bulk, single-cell, and marker genes.")
   }
   if (verbose) {
     n.cells <- base::ncol(sc.eset)

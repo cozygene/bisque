@@ -36,7 +36,7 @@ a delimiter of "-" and position of "2" indicates that the individual ID for
 the cell ID \strong{ACTG-2} would be \strong{2}.
 }
 \examples{
-\dontrun{
+\donttest{
   library(Seurat)
   seurat.object <- readRDS("seurat.v3.object.rds") # For illustration only
   # Assuming barcodes are of the form "<BARCODE>-<INDIVIDUAL_ID>"

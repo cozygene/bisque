@@ -5,7 +5,7 @@ Authors@R: c(
   person(given = 'Brandon', family = 'Jew', email = 'brandon.jew@ucla.edu', role = c('aut', 'cre')),
   person(given = 'Marcus', family = 'Alvarez', role = 'aut')
   )
-Description: Bisque provides tools to accurately estimate cell type abundances 
+Description: Provides tools to accurately estimate cell type abundances 
     from heterogeneous bulk expression. A reference-based method utilizes
     single-cell information to generate a signature matrix and transformation
     of bulk expression for accurate regression based estimates. A marker-based
