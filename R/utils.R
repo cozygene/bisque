@@ -22,10 +22,25 @@
 #' @examples
 #' \donttest{
 #'   library(Seurat)
-#'   seurat.object <- readRDS("seurat.v3.object.rds") # For illustration only
-#'   # Assuming barcodes are of the form "<BARCODE>-<INDIVIDUAL_ID>"
-#'   single.cell.expression.set <- SeuratToExpressionSet(seurat.object, delimiter='-',
-#'                                                       position=2, version="v3")
+#'   library(Biobase)
+#'
+#'   # We make a class to emulate a Seurat v2 object for illustration only
+#'   setClass("testSeuratv2", representation(cell.names = "character",
+#'                                           ident = "character",
+#'                                           raw.data = "matrix"))
+#'   sc.counts <- matrix(0,nrow=3,ncol=3)
+#'   # These barcodes correspond to a delimiter of "-" and position 2 for individual id.
+#'   test.cell.names <- c("ATCG-1", "TAGC-2", "GTCA-3")
+#'   test.ident <- c("cell type a", "cell type b", "cell type c")
+#'   names(test.ident) <- test.cell.names
+#'   colnames(sc.counts) <- test.cell.names
+#'   test.seurat.obj <- new("testSeuratv2",
+#'                          cell.names=test.cell.names,
+#'                          ident=test.ident,
+#'                          raw.data=sc.counts)
+#'
+#'   single.cell.expression.set <- SeuratToExpressionSet(test.seurat.obj, delimiter='-',
+#'                                                       position=2, version="v2")
 #' }
 #'
 #' @export
