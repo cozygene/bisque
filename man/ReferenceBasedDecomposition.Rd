@@ -57,3 +57,13 @@ found in both single-cell and bulk datasets to learn transformation or
 learn transformation from single-cell alone. The overlapping option is
 expected to have better performance.
 }
+\examples{
+library(Biobase)
+sim.data <- SimulateData(n.ind=10, n.genes=100, n.cells=100,
+                         cell.types=c("Neurons", "Astrocytes", "Microglia"),
+                         avg.props=c(.5, .3, .2))
+sim.data$sc.eset <- sim.data$sc.eset[,sim.data$sc.eset$SubjectName \%in\% as.character(6:10)]
+res <- ReferenceBasedDecomposition(sim.data$bulk.eset, sim.data$sc.eset)
+estimated.cell.proportions <- res$bulk.props
+
+}

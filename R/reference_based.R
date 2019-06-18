@@ -27,12 +27,10 @@ GetOverlappingSamples <- function(sc.eset, bulk.eset, subject.names, verbose) {
   if (verbose) {
     n.overlapping <- base::length(samples$overlapping)
     n.remaining <- base::length(samples$remaining)
-    base::cat(base::sprintf("Found %i samples", n.overlapping),
-                            "with bulk and single-cell expression.\n",
-                            sep=" ")
-    base::cat(base::sprintf("Remaining %i", n.remaining),
-                            "bulk expression samples will be deconvoluted.\n",
-                            sep=" ")
+    base::message(base::sprintf("Found %i samples ", n.overlapping),
+                                "with bulk and single-cell expression.")
+    base::message(base::sprintf("Remaining %i ", n.remaining),
+                                "bulk samples will be decomposed.")
   }
   return(samples)
 }
@@ -60,9 +58,8 @@ GetOverlappingGenes <- function(sc.eset, bulk.eset, markers, verbose) {
   }
   if (verbose) {
     n.genes <- base::length(overlapping.genes)
-    base::cat(base::sprintf("Using %i genes in both", n.genes),
-                            "bulk and single-cell expression.\n",
-                            sep=" ")
+    base::message(base::sprintf("Using %i genes in both", n.genes),
+                                " bulk and single-cell expression.")
   }
   return(overlapping.genes)
 }
@@ -245,6 +242,15 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
 #'   Slot \strong{rnorm} contains Euclidean norm of the residuals for each
 #'   individual's proportion estimates. Slot \strong{genes.used} contains
 #'   vector of genes used in decomposition
+#' @examples
+#' library(Biobase)
+#' sim.data <- SimulateData(n.ind=10, n.genes=100, n.cells=100,
+#'                          cell.types=c("Neurons", "Astrocytes", "Microglia"),
+#'                          avg.props=c(.5, .3, .2))
+#' sim.data$sc.eset <- sim.data$sc.eset[,sim.data$sc.eset$SubjectName %in% as.character(6:10)]
+#' res <- ReferenceBasedDecomposition(sim.data$bulk.eset, sim.data$sc.eset)
+#' estimated.cell.proportions <- res$bulk.props
+#' 
 #' @export
 ReferenceBasedDecomposition <- function(bulk.eset,
                                         sc.eset,
@@ -272,11 +278,11 @@ ReferenceBasedDecomposition <- function(bulk.eset,
     base::length(base::levels(base::factor(sc.eset[[cell.types]])))
   if (n.cell.types == 1) {
     base::stop(base::cat("Single-cell pheno data indicates only one cell type",
-                         "present. No need to deconvolute.", sep=" "))
+                         "present. No need for decomposition.", sep=" "))
   }
   if (verbose) {
-    base::cat(base::sprintf("Deconvoluting into %i cell types.\n",
-                              n.cell.types))
+    base::message(base::sprintf("Decomposing into %i cell types.",
+                                n.cell.types))
   }
   if (use.overlap) {
     samples <- GetOverlappingSamples(sc.eset, bulk.eset, subject.names, verbose)
@@ -295,14 +301,14 @@ ReferenceBasedDecomposition <- function(bulk.eset,
     Biobase::ExpressionSet(assayData=Biobase::exprs(bulk.eset)[genes,],
                            phenoData=bulk.eset@phenoData)
   if (verbose) {
-    base::cat("Converting single-cell counts to CPM and",
-              "filtering zero variance genes.\n", sep=" ")
+    base::message("Converting single-cell counts to CPM and ",
+              "filtering zero variance genes.")
   }
   sc.eset <- CountsToCPM(sc.eset)
   sc.eset <- FilterZeroVarianceGenes(sc.eset, verbose)
   if (verbose) {
-    base::cat("Converting bulk counts to CPM and filtering",
-              "unexpressed genes.\n", sep=" ")
+    base::message("Converting bulk counts to CPM and filtering",
+                  "unexpressed genes.")
   }
   bulk.eset <- CountsToCPM(bulk.eset)
   bulk.eset <- FilterUnexpressedGenes(bulk.eset, verbose)
@@ -315,29 +321,29 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   }
   if (verbose) {
     n.cells <- base::ncol(sc.eset)
-    base::cat("Generating single-cell based reference from",
-              sprintf("%i cells.\n", n.cells), sep=" ")
+    base::message("Generating single-cell based reference from ",
+                  sprintf("%i cells.\n", n.cells))
   }
   sc.ref <- GenerateSCReference(sc.eset, cell.types)[genes,,drop=F]
   sc.props <- CalculateSCCellProportions(sc.eset, subject.names, cell.types)
   sc.props <- sc.props[base::colnames(sc.ref),,drop=F]
   if (use.overlap) {
     if (verbose) {
-      base::cat("Learning bulk transformation from overlapping samples.\n")
+      base::message("Learning bulk transformation from overlapping samples.")
     }
     # Y.train is pseudo-bulk expression based on reference profile weighted by
     #   cell type proportions estimated for single-cell samples.
     Y.train <- sc.ref %*% sc.props[,samples$overlapping,drop=F]
     # X.train is the actual bulk for the single-cell samples.
     X.train <- Biobase::exprs(bulk.eset)[genes,samples$overlapping,drop=F]
-    # X.pred is the bulk for the remaining samples to be deconvoluted.
+    # X.pred is the bulk for the remaining samples to be decomposed.
     X.pred <- Biobase::exprs(bulk.eset)[genes,samples$remaining,drop=F]
     template <- base::numeric(base::length(samples$remaining))
     base::names(template) <- samples$remaining
     if (verbose) {
-      base::cat("Applying transformation to bulk samples and deconvoluting.\n")
+      base::message("Applying transformation to bulk samples and decomposing.")
     }
-    # Y.pred is the transformed bulk for samples to be deconvoluted.
+    # Y.pred is the transformed bulk for samples to be decomposed.
     Y.pred <- base::matrix(base::vapply(X=genes, FUN=SupervisedTransformBulk,
                                         FUN.VALUE=template,
                                         Y.train, X.train, X.pred,
@@ -347,20 +353,20 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   }
   else {
     if (verbose) {
-      base::cat("Inferring bulk transformation from single-cell alone.\n")
+      base::message("Inferring bulk transformation from single-cell alone.")
     }
     # Y.train is pseudo-bulk expression based on reference profile weighted by
     #   cell type proportions estimated for single-cell samples.
     Y.train <- sc.ref %*% sc.props
-    # X.pred is the bulk for the remaining samples to be deconvoluted.
+    # X.pred is the bulk for the remaining samples to be decomposed.
     X.pred <- Biobase::exprs(bulk.eset)[genes,,drop=F]
     sample.names <- base::colnames(Biobase::exprs(bulk.eset))
     template <- base::numeric(base::length(sample.names))
     base::names(template) <- sample.names
     if (verbose) {
-      base::cat("Applying transformation to bulk samples and deconvoluting.\n")
+      base::message("Applying transformation to bulk samples and decomposing.")
     }
-    # Y.pred is the transformed bulk for samples to be deconvoluted.
+    # Y.pred is the transformed bulk for samples to be decomposed.
     Y.pred <- base::matrix(base::vapply(X=genes,
                                         FUN=SemisupervisedTransformBulk,
                                         FUN.VALUE=template,
@@ -375,8 +381,8 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   if (base::any(indices)) {
     if (verbose) {
       n.dropped <- base::sum(indices)
-      base::cat(base::sprintf("Dropped an additional %i genes", n.dropped),
-                "for which a transformation could not be learned.\n", sep=" ")
+      base::message(base::sprintf("Dropped an additional %i genes", n.dropped),
+                    " for which a transformation could not be learned.")
     }
     if (sum(!indices) == 0) {
       base::stop("Zero genes left for decomposition.")

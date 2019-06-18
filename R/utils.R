@@ -19,6 +19,14 @@
 #'   create Seurat object. 
 #' @return sc.eset Expression set containing relevant phenotype and individual
 #'   data, \emph{cellType} and \emph{SubjectName}.
+#' @examples
+#' \dontrun{
+#'   library(Seurat)
+#'   seurat.object <- readRDS("seurat.v3.object.rds") # For illustration only
+#'   # Assuming barcodes are of the form "<BARCODE>-<INDIVIDUAL_ID>"
+#'   single.cell.expression.set <- SeuratToExpressionSet(seurat.object, delimiter='-',
+#'                                                       position=2, version="v3")
+#' }
 #'
 #' @export
 SeuratToExpressionSet <- function(seurat.object, delimiter, position,
@@ -46,12 +54,11 @@ SeuratToExpressionSet <- function(seurat.object, delimiter, position,
   base::names(individual.ids) <- get.cell.names(seurat.object)
   individual.ids <- base::factor(individual.ids)
   n.individuals <- base::length(base::levels(individual.ids))
-  base::cat(base::sprintf("Split sample names by \"%s\"", delimiter),
-            base::sprintf("and checked position %i.", position),
-            base::sprintf("Found %i individuals.\n", n.individuals),
-            sep=" ")
-  base::cat(base::sprintf("Example: \"%s\" corresponds to individual \"%s\".\n",
-                          get.cell.names(seurat.object)[1], individual.ids[1]))
+  base::message(base::sprintf("Split sample names by \"%s\"", delimiter),
+                base::sprintf(" and checked position %i.", position),
+                base::sprintf(" Found %i individuals.", n.individuals))
+  base::message(base::sprintf("Example: \"%s\" corresponds to individual \"%s\".",
+                              get.cell.names(seurat.object)[1], individual.ids[1]))
   sample.ids <- base::names(get.ident(seurat.object))
   sc.pheno <- base::data.frame(check.names=F, check.rows=F,
                                stringsAsFactors=F,
@@ -104,8 +111,8 @@ FilterZeroVarianceGenes <- function(eset, verbose=TRUE) {
   }
   if (verbose) {
     genes.filtered <- base::length(indices) - base::nrow(eset)
-    base::cat(base::sprintf("Filtered %i zero variance genes.\n",
-                            genes.filtered))
+    base::message(base::sprintf("Filtered %i zero variance genes.",
+                                genes.filtered))
   }
   return(eset)
 }
@@ -125,7 +132,8 @@ FilterUnexpressedGenes <- function(eset, verbose=TRUE) {
   }
   if (verbose) {
     genes.filtered <- base::length(indices) - base::nrow(eset)
-    base::cat(base::sprintf("Filtered %i unexpressed genes.\n", genes.filtered))
+    base::message(base::sprintf("Filtered %i unexpressed genes.",
+                                genes.filtered))
   }
   return(eset)
 }

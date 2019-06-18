@@ -35,3 +35,13 @@ arguments are used to infer the individual ID from the cell ID. For example,
 a delimiter of "-" and position of "2" indicates that the individual ID for
 the cell ID \strong{ACTG-2} would be \strong{2}.
 }
+\examples{
+\dontrun{
+  library(Seurat)
+  seurat.object <- readRDS("seurat.v3.object.rds") # For illustration only
+  # Assuming barcodes are of the form "<BARCODE>-<INDIVIDUAL_ID>"
+  single.cell.expression.set <- SeuratToExpressionSet(seurat.object, delimiter='-',
+                                                      position=2, version="v3")
+}
+
+}

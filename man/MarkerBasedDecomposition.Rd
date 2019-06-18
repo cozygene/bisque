@@ -54,3 +54,12 @@ that are highly expressed in the given cell type.
 Note that this method expects the input bulk data to be normalized, unlike
 the reference-based method.
 }
+\examples{
+library(Biobase)
+sim.data <- SimulateData(n.ind=10, n.genes=100, n.cells=100,
+                         cell.types=c("Neurons", "Astrocytes", "Microglia"),
+                         avg.props=c(.5, .3, .2))
+res <- MarkerBasedDecomposition(sim.data$bulk.eset, sim.data$markers, weighted=FALSE)
+estimated.cell.proportions <- res$bulk.props
+
+}

@@ -18,7 +18,7 @@ SimulateBarcode <- function(index, individual, barcode.length){
     index <- index %/% 4
   }
   barcode <- plyr::mapvalues(barcode, from=0:3, to=c("A","T","C","G"),
-                             warn_missing = F)
+                             warn_missing = FALSE)
   barcode <- paste(c(barcode,'-', individual), collapse="")
   return(barcode)
 }
@@ -37,6 +37,12 @@ SimulateBarcode <- function(index, individual, barcode.length){
 #' @return A list with simulated single-cell in slot `sc.eset` and bulk in
 #'   `bulk.eset`, as well as true proportions in `props` and marker genes
 #'   in `markers`.
+#' @examples
+#' library(Biobase)
+#' sim.data <- SimulateData(n.ind=10, n.genes=100, n.cells=100,
+#'                          cell.types=c("Neurons", "Astrocytes", "Microglia"),
+#'                          avg.props=c(.5, .3, .2))
+#'
 #' @export
 SimulateData <- function(n.ind, n.genes, n.cells, cell.types, avg.props){
   true.props <- stats::rmultinom(n.ind, n.cells, avg.props)/n.cells

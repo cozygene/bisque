@@ -27,3 +27,10 @@ A list with simulated single-cell in slot `sc.eset` and bulk in
 Simulates bulk and single-cell expression, as well as marker genes and
 true proportions that can be used as an example of decomposition
 }
+\examples{
+library(Biobase)
+sim.data <- SimulateData(n.ind=10, n.genes=100, n.cells=100,
+                         cell.types=c("Neurons", "Astrocytes", "Microglia"),
+                         avg.props=c(.5, .3, .2))
+
+}

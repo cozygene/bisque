@@ -170,7 +170,7 @@ GetCTP <- function(bulk,
                        ng = GetNumGenesWeighted(expr, ctw, min_gene, max_gene) # Number of markers for PCA
                        expr = expr[,1:ng,drop=FALSE]
                        if (verbose){
-                         base::cat(base::sprintf("Using %i genes for cell type %s; ", ng, ct))
+                         base::message(base::sprintf("Using %i genes for cell type %s; ", ng, ct))
                        }
                        ret = EstimatePCACellTypeProportions(expr, weighted=TRUE, w=ctw[1:ng])
                      }
@@ -178,7 +178,7 @@ GetCTP <- function(bulk,
                        ng = GetNumGenes(expr, min_gene, max_gene)
                        expr = expr[,1:ng,drop=FALSE]
                        if (verbose){
-                         base::cat(base::sprintf("Using %i genes for cell type %s; ", ng, ct))
+                         base::message(base::sprintf("Using %i genes for cell type %s; ", ng, ct))
                        }
                        ret = EstimatePCACellTypeProportions(expr)
                      }
@@ -192,7 +192,7 @@ GetCTP <- function(bulk,
                        cors = stats::cor(expr, ret$pcs[,1]); n_pos = sum(cors[,1] > 0)
                        pct <- as.character(as.integer(100 * round(n_pos/base::length(cors[,1]), 2)))
                        clen <- as.character(base::length(cors[,1]))
-                       base::cat(base::paste0(pct, "% of ", clen, " marker genes correlate positively with PC1 for cell type ", ct, "\n"))
+                       base::message(base::paste0(pct, "% of ", clen, " marker genes correlate positively with PC1 for cell type ", ct))
                      }
                      return(ret)
                    })
@@ -231,6 +231,14 @@ GetCTP <- function(bulk,
 #'   type abundances. Slot \strong{var.explained} contains variance explained by
 #'   first 20 PCs for cell type marker genes. Slot \strong{genes.used} contains
 #'   vector of genes used for decomposition.
+#' @examples
+#' library(Biobase)
+#' sim.data <- SimulateData(n.ind=10, n.genes=100, n.cells=100,
+#'                          cell.types=c("Neurons", "Astrocytes", "Microglia"),
+#'                          avg.props=c(.5, .3, .2))
+#' res <- MarkerBasedDecomposition(sim.data$bulk.eset, sim.data$markers, weighted=FALSE)
+#' estimated.cell.proportions <- res$bulk.props
+#' 
 #' @export
 MarkerBasedDecomposition <- function(bulk.eset, 
                                        markers,
@@ -254,7 +262,7 @@ MarkerBasedDecomposition <- function(bulk.eset,
 
   # Get unique markers if applicable
   if (unique_markers){
-    if (verbose) cat("Getting unique markers\n")
+    if (verbose) message("Getting unique markers")
     markers <- GetUniqueMarkers(markers, gene_col=gene_col)
     n_genes_clust <- table(markers[,ct_col])
     if (any(n_genes_clust < min_gene)) {
@@ -265,7 +273,7 @@ MarkerBasedDecomposition <- function(bulk.eset,
   }
   cg <- intersect(unique(markers[,gene_col]), rownames(bulk.eset))
   if (length(cg) == 0) {
-    base::stop(cat("No overlapping genes between markers and bulk.eset\n"))
+    base::stop("No overlapping genes between markers and bulk.eset")
   }
   markers <- markers[markers[,gene_col] %in% cg,]
 
@@ -275,8 +283,8 @@ MarkerBasedDecomposition <- function(bulk.eset,
   n_ct <- length(cell_types)
   n_s <- base::ncol(bulk.eset)
   if (verbose){
-    base::cat(base::paste0("Estimating proportions for ",
-                           base::sprintf("%i cell types in %i samples\n",
+    base::message(base::paste0("Estimating proportions for ",
+                           base::sprintf("%i cell types in %i samples",
                                          n_ct, n_s)))
   }
 
@@ -293,18 +301,16 @@ MarkerBasedDecomposition <- function(bulk.eset,
   ctp_cors <- stats::cor(ctp_pc1)
   ctp_cors <- CorTri(ctp_cors)
   if (verbose & all(ctp_cors > 0)){
-    base::cat("***\n")
-    base::cat(paste0("WARN: All cell type proportion estimates are correlated ",
-                     "positively with each other. Check to make sure the ",
-                     "expression data is properly normalized\n"))
-    base::cat("***\n")
+    base::warning("WARN: All cell type proportion estimates are correlated ",
+                  "positively with each other. Check to make sure the ",
+                  "expression data is properly normalized")
   }
 
   ctp_pc1 <- base::t(ctp_pc1)
   ctp_varexpl <- base::sapply(ctp, function(x) x$sdev[1:20])
   rownames(ctp_varexpl) <- base::paste0("PC", base::as.character(1:20))
   genes_used <- base::lapply(ctp, function(x) x$genes)
-  if (verbose) cat("Finished estimating cell type proportions using PCA\n")
+  if (verbose) message("Finished estimating cell type proportions using PCA")
   return(list(bulk.props=ctp_pc1,
               var.explained=ctp_varexpl,
               genes.used=genes_used))
