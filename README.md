@@ -2,6 +2,9 @@
 
 [![Build Status](https://travis-ci.org/cozygene/bisque.svg?branch=master)](https://travis-ci.org/cozygene/bisque)
 [![codecov](https://codecov.io/gh/cozygene/bisque/branch/master/graph/badge.svg)](https://codecov.io/gh/cozygene/bisque)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/r-bisquerna/README.html)
+[![CRAN Version](https://www.r-pkg.org/badges/version/BisqueRNA)](https://CRAN.R-project.org/package=BisqueRNA)
+
 
 An R toolkit for accurate and efficient estimation of cell composition ('decomposition') from bulk expression data with single-cell information.
 
@@ -20,6 +23,17 @@ This method captures relative abundances of a cell type across individuals. Note
 
 ## Installation
 
+The Bisque R package is available on CRAN
+```r
+install.packages("BisqueRNA")
+```
+
+as well as Bioconda
+```
+conda install r-bisquerna
+```
+
+The package can also be installed from the GitHub repository
 ```r
 devtools::install_github("cozygene/bisque")
 ```
