@@ -48,13 +48,15 @@ EstimatePCACellTypeProportions <- function(x, weighted=FALSE, w=NULL){
 #' @return best.n Numeric. Number of genes to use
 GetNumGenesWeighted = function(x, w, min.gene = 25, max.gene = 200){
   max.gene = base::min(max.gene, base::ncol(x))
+  if (max.gene == 1) return(1)
   ratios = base::lapply(min.gene:max.gene,
                         function(i) {
                           ret = EstimatePCACellTypeProportions(x[,1:i],
                                         weighted=TRUE,
                                         w=w[1:i])
                           vars = ret$sdev
-                          vars[1] / vars[2]
+                          if (length(vars) == 1) return(NA)
+                          else return(vars[1] / vars[2])
                         })
   best.n = base::which.max(ratios) + min.gene - 1
   return(best.n)
@@ -69,11 +71,13 @@ GetNumGenesWeighted = function(x, w, min.gene = 25, max.gene = 200){
 #' @return best.n Numeric. Number of genes to use
 GetNumGenes = function(x, min.gene = 25, max.gene = 200){
   max.gene = base::min(max.gene, base::ncol(x))
+  if (max.gene == 1) return(1)
   ratios = base::lapply(min.gene:max.gene,
                         function(i) {
                           ret = EstimatePCACellTypeProportions(x[,1:i])
                           vars = ret$sdev
-                          vars[1] / vars[2]
+                          if (length(vars) == 1) return(NA)
+                          else return(vars[1] / vars[2])
                         })
   best.n = base::which.max(ratios) + min.gene - 1
   return(best.n)
@@ -157,7 +161,7 @@ GetCTP <- function(bulk,
                      if ( base::length(common_markers) == 0 ){
                        base::stop("No marker genes found in bulk expression data")
                      }
-                     expr = base::t(Biobase::exprs(bulk)[common_markers,])
+                     expr = base::t(Biobase::exprs(bulk)[common_markers, , drop = FALSE])
                      if ( base::ncol(expr) < min_gene ){
                        base::stop(base::paste0(base::sprintf("For cell type %s, There are less marker genes in ", ct),
                                                base::sprintf("the bulk expression set (%i) than the ", base::ncol(expr)),
@@ -168,15 +172,15 @@ GetCTP <- function(bulk,
                        # Get gene weights
                        ctw = markers_ct[, w_col]; names(ctw) = ctm; ctw = ctw[common_markers]
                        ng = GetNumGenesWeighted(expr, ctw, min_gene, max_gene) # Number of markers for PCA
-                       expr = expr[,1:ng,drop=FALSE]
+                       expr = expr[, 1:ng, drop = FALSE]
                        if (verbose){
                          base::message(base::sprintf("Using %i genes for cell type %s; ", ng, ct))
                        }
-                       ret = EstimatePCACellTypeProportions(expr, weighted=TRUE, w=ctw[1:ng])
+                       ret = EstimatePCACellTypeProportions(expr, weighted = TRUE, w = ctw[1:ng])
                      }
                      else{
                        ng = GetNumGenes(expr, min_gene, max_gene)
-                       expr = expr[,1:ng,drop=FALSE]
+                       expr = expr[, 1:ng, drop = FALSE]
                        if (verbose){
                          base::message(base::sprintf("Using %i genes for cell type %s; ", ng, ct))
                        }
@@ -241,15 +245,15 @@ GetCTP <- function(bulk,
 #' 
 #' @export
 MarkerBasedDecomposition <- function(bulk.eset, 
-                                       markers,
-                                       ct_col="cluster",
-                                       gene_col="gene",
-                                       min_gene = 5,
-                                       max_gene = 200,
-                                       weighted=FALSE,
-                                       w_col = "avg_logFC",
-                                       unique_markers = TRUE,
-                                       verbose=TRUE){
+                                     markers,
+                                     ct_col="cluster",
+                                     gene_col="gene",
+                                     min_gene = 5,
+                                     max_gene = 200,
+                                     weighted=FALSE,
+                                     w_col = "avg_logFC",
+                                     unique_markers = TRUE,
+                                     verbose=TRUE){
   # Check input
   if ( ! methods::is(bulk.eset, "ExpressionSet") ) {
     base::stop("Expression data should be in ExpressionSet")
@@ -259,17 +263,15 @@ MarkerBasedDecomposition <- function(bulk.eset,
                             "must be less than or equal to max_gene ",
                             base::sprintf("(set at %i)\n", max_gene)))
   }
+  if (min_gene <= 0){
+      base::stop("'min_gene' must be greater than or equal to 1")
+  }
 
   # Get unique markers if applicable
   if (unique_markers){
     if (verbose) message("Getting unique markers")
+    # Remove gene rows from markers data frame that are shared
     markers <- GetUniqueMarkers(markers, gene_col=gene_col)
-    n_genes_clust <- table(markers[,ct_col])
-    if (any(n_genes_clust < min_gene)) {
-      base::stop(paste0("Clusters must have a minimum of ",
-                        base::as.character(min_gene),
-                        " unique marker genes"))
-    }
   }
   cg <- intersect(unique(markers[,gene_col]), rownames(bulk.eset))
   if (length(cg) == 0) {
@@ -277,27 +279,62 @@ MarkerBasedDecomposition <- function(bulk.eset,
   }
   markers <- markers[markers[,gene_col] %in% cg,]
 
-  # Set variables
+  # Check if there are enough markers
+  n_genes_clust <- table(markers[,ct_col])
+  if (any(n_genes_clust < min_gene)) {
+    nctbelow <- sum(n_genes_clust < min_gene)
+    ctbelow <- names(n_genes_clust)[n_genes_clust < min_gene]
+    base::stop(ngettext(nctbelow, "Cell type ", "Cell types "), 
+               paste(ctbelow, collapse = ", "), 
+               ngettext(nctbelow, " has ", " have "), 
+               "less than min_gene=", 
+               as.character(min_gene), 
+               " marker genes")
+  }
+
+  # Throw warning if less than 5 markers used for decomposition
+  if (verbose){
+    if (any(n_genes_clust < 5)){
+      nctbelow <- sum(n_genes_clust < 5)
+      ctbelow <- names(n_genes_clust)[n_genes_clust < 5]
+      base::warning("WARN: Less than 5 marker genes available for ", 
+                    "PCA-based decomposition in ", 
+                    ngettext(nctbelow, "cell type ", "cell types "), 
+                    paste(ctbelow, collapse = ", "), 
+                    ". Estimated cell type proportions may be ", 
+                    "unreliable")
+    }
+  }
+
   markers[,ct_col] <- as.character(markers[,ct_col])
   cell_types <- sort(unique(markers[,ct_col]))
   n_ct <- length(cell_types)
   n_s <- base::ncol(bulk.eset)
   if (verbose){
-    base::message(base::paste0("Estimating proportions for ",
-                           base::sprintf("%i cell types in %i samples",
-                                         n_ct, n_s)))
+    base::message(base::paste0("Estimating proportions for ", 
+                               base::sprintf("%i cell types in %i samples", 
+                                             n_ct, n_s)))
   }
 
   # Remove zero-variance genes
   bulk.eset <- FilterZeroVarianceGenes(bulk.eset, verbose)
 
   # Get cell type proportions
-  ctp <- GetCTP(bulk.eset, cell_types, markers, ct_col, gene_col,
-                min_gene, max_gene, weighted, w_col, verbose)
-
+  ctp <- GetCTP(bulk = bulk.eset, 
+                cell_types = cell_types, 
+                markers = markers, 
+                ct_col = ct_col, 
+                gene_col = gene_col,
+                min_gene = min_gene, 
+                max_gene = max_gene, 
+                weighted = weighted, 
+                w_col = w_col, 
+                verbose = verbose)
   names(ctp) <- cell_types
   ctp_pc1 <- base::lapply(ctp, function(x) x$pcs[,1])
   ctp_pc1 <- base::do.call(cbind, ctp_pc1)
+
+  # Check if all proportions are correlated with each other
   ctp_cors <- stats::cor(ctp_pc1)
   ctp_cors <- CorTri(ctp_cors)
   if (verbose & all(ctp_cors > 0)){
@@ -306,6 +343,7 @@ MarkerBasedDecomposition <- function(bulk.eset,
                   "expression data is properly normalized")
   }
 
+  # Return results in list
   ctp_pc1 <- base::t(ctp_pc1)
   ctp_varexpl <- base::sapply(ctp, function(x) x$sdev[1:20])
   rownames(ctp_varexpl) <- base::paste0("PC", base::as.character(1:20))
