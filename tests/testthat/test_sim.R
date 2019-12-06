@@ -6,6 +6,8 @@ test_that("Simulation provides output", {
   sim.data <- BisqueRNA::SimulateData(3,3,2,c('a','b'), c(.5,.5))
   expect_match(class(sim.data$sc.eset), "ExpressionSet")
   expect_match(class(sim.data$bulk.eset), "ExpressionSet")
+  expect("matrix" %in% class(sim.data$props),
+         failure_message="sim.data$props not of class matrix")
   expect_match(class(sim.data$props), "matrix")
   expect_match(class(sim.data$markers), "data.frame")
 })
