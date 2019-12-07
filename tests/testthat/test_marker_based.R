@@ -7,6 +7,9 @@ test_that("Catches input errors", {
   bulk.eset <- Biobase::ExpressionSet(assayData = bulk.counts)
   markers <- data.frame(gene=c("1","2"), cluster=c("a", "b"))
   expect_error(BisqueRNA::MarkerBasedDecomposition(bulk.counts, markers))
+  # Trying to use min_gene = 0
+  expect_error(BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers,
+                                                   min_gene=0, max_gene=5))
   # Min gene greater than max gene
   expect_error(BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers,
                                                    min_gene=6, max_gene=5))
@@ -35,5 +38,11 @@ test_that("Produces output for simulated data", {
   expect_true("bulk.props" %in% unlist(attributes(res)))
   # unweighted
   expect_warning(res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers, min_gene=4, weighted=F))
+  expect_true("bulk.props" %in% unlist(attributes(res)))
+  # weighted with max.gene = 1
+  expect_warning(res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers, min_gene=1, max_gene=1, weighted=T))
+  expect_true("bulk.props" %in% unlist(attributes(res)))
+  # unweighted with max.gene = 1
+  expect_warning(res <- BisqueRNA::MarkerBasedDecomposition(bulk.eset, markers, min_gene=1, max_gene=1, weighted=F))
   expect_true("bulk.props" %in% unlist(attributes(res)))
 })

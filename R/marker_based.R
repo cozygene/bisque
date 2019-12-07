@@ -20,9 +20,12 @@ EstimatePCACellTypeProportions <- function(x, weighted=FALSE, w=NULL){
     #  base::stop(base::paste0("Genes from weights w do not match with column ",
     #                         "names of expression matrix x."))
     #}
-    x <- x[,common.markers]
-    w <- w[common.markers]
+    x <- x[,common.markers,drop=F]
+    w <- w[common.markers,drop=F]
     wd <- base::diag(w)
+    if (base::all.equal(base::dim(wd), c(0,0)) == TRUE){
+      wd <- w
+    }
     xw <- x %*% wd
     varcov <- t(xw) %*% xw
   }
@@ -51,12 +54,11 @@ GetNumGenesWeighted = function(x, w, min.gene = 25, max.gene = 200){
   if (max.gene == 1) return(1)
   ratios = base::lapply(min.gene:max.gene,
                         function(i) {
-                          ret = EstimatePCACellTypeProportions(x[,1:i],
+                          ret = EstimatePCACellTypeProportions(x[,1:i,drop=FALSE],
                                         weighted=TRUE,
                                         w=w[1:i])
                           vars = ret$sdev
-                          if (length(vars) == 1) return(NA)
-                          else return(vars[1] / vars[2])
+                          return(vars[1] / vars[2])
                         })
   best.n = base::which.max(ratios) + min.gene - 1
   return(best.n)
@@ -76,8 +78,7 @@ GetNumGenes = function(x, min.gene = 25, max.gene = 200){
                         function(i) {
                           ret = EstimatePCACellTypeProportions(x[,1:i])
                           vars = ret$sdev
-                          if (length(vars) == 1) return(NA)
-                          else return(vars[1] / vars[2])
+                          return(vars[1] / vars[2])
                         })
   best.n = base::which.max(ratios) + min.gene - 1
   return(best.n)

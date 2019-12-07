@@ -101,4 +101,7 @@ test_that("SeuratToExpressionSet works", {
   expect_warning({test.eset <- SeuratToExpressionSet(test.seurat.obj, delimiter = '-',
                                      position=2, version = "v2")})
   expect_match(class(test.eset), "ExpressionSet")
+  # v3 failure test for 100% code coverage
+  expect_error({test.eset <- SeuratToExpressionSet(test.seurat.obj, delimiter = '-',
+                                                     position=2, version = "v3")})
 })
