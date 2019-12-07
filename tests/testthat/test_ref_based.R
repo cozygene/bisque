@@ -26,6 +26,30 @@ test_that("Catches expressionset missing given labels", {
   expect_error(BisqueRNA::ReferenceBasedDecomposition(bulk.eset, sc.eset))
 })
 
+test_that("Catches single-cell data with only one or two subjects", {
+  bulk.counts <- matrix(1:4,nrow=2,ncol=2)
+  sc.counts <- matrix(0,nrow=2,ncol=2)
+  bulk.eset <- Biobase::ExpressionSet(assayData = bulk.counts)
+  # One Subject
+  sc.pheno <- data.frame(SubjectName=c('a', 'a'), cellType=c('a', 'b'))
+  sc.meta <- data.frame(labelDescription=c("SubjectName", "cellType"),
+                        row.names=c("SubjectName", "cellType"))
+  sc.pdata <- new("AnnotatedDataFrame", data=sc.pheno, varMetadata=sc.meta)
+  sc.eset <- Biobase::ExpressionSet(assayData = sc.counts, phenoData = sc.pdata)
+  expect_error(BisqueRNA::ReferenceBasedDecomposition(bulk.eset, sc.eset,
+                                                      use.overlap=FALSE))
+  # Two subjects
+  sc.counts <- matrix(1:8,nrow=2,ncol=4)
+  sc.pheno <- data.frame(SubjectName=c('a', 'a', 'b', 'b'),
+                         cellType=c('a', 'b', 'a', 'b'))
+  sc.meta <- data.frame(labelDescription=c("SubjectName", "cellType"),
+                        row.names=c("SubjectName", "cellType"))
+  sc.pdata <- new("AnnotatedDataFrame", data=sc.pheno, varMetadata=sc.meta)
+  sc.eset <- Biobase::ExpressionSet(assayData = sc.counts, phenoData = sc.pdata)
+  expect_warning(BisqueRNA::ReferenceBasedDecomposition(bulk.eset, sc.eset,
+                                                        use.overlap=FALSE),
+                 regexp="Only two individuals detected in single-cell data")
+})
 
 test_that("Catches single-cell data with only one cell type label", {
   bulk.counts <- matrix(0,nrow=2,ncol=2)

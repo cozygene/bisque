@@ -271,6 +271,17 @@ ReferenceBasedDecomposition <- function(bulk.eset,
     base::stop(base::sprintf("Individual label \"%s\"", subject.names),
                " not found in single-cell ExpressionSet varLabels.")
   }
+  n.sc.individuals <-
+    base::length(base::levels(base::factor(sc.eset[[subject.names]])))
+  if (n.sc.individuals == 1) {
+    base::stop("Only one individual detected in single-cell data. At least ",
+               "two subjects are needed (three or more recommended).")
+  }
+  else if (n.sc.individuals == 2) {
+    base::warning("Only two individuals detected in single-cell data. While ",
+                  "Bisque will run, we recommend at least three subjects for",
+                  " reliable performance.")
+  }
   n.cell.types <-
     base::length(base::levels(base::factor(sc.eset[[cell.types]])))
   if (n.cell.types == 1) {
@@ -305,7 +316,7 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   sc.eset <- FilterZeroVarianceGenes(sc.eset, verbose)
   if (verbose) {
     base::message("Converting bulk counts to CPM and filtering",
-                  "unexpressed genes.")
+                  " unexpressed genes.")
   }
   bulk.eset <- CountsToCPM(bulk.eset)
   bulk.eset <- FilterUnexpressedGenes(bulk.eset, verbose)
