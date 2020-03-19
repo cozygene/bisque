@@ -8,6 +8,5 @@ test_that("Simulation provides output", {
   expect_match(class(sim.data$bulk.eset), "ExpressionSet")
   expect("matrix" %in% class(sim.data$props),
          failure_message="sim.data$props not of class matrix")
-  expect_match(class(sim.data$props), "matrix")
   expect_match(class(sim.data$markers), "data.frame")
 })

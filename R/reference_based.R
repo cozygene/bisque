@@ -100,7 +100,7 @@ GenerateSCReference <- function(sc.eset, cell.types) {
 CalculateSCCellProportions <- function(sc.eset, subject.names, cell.types) {
   individual.labels <- base::factor(sc.eset[[subject.names]])
   individuals <- base::levels(individual.labels)
-  cell.labels <- sc.eset[[cell.types]]
+  cell.labels <- base::as.factor(sc.eset[[cell.types]])
   aggr.fn <- function(individual) {
      base::table(cell.labels[individual.labels == individual]) /
        base::length(cell.labels[individual.labels == individual])
