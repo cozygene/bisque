@@ -397,12 +397,18 @@ ReferenceBasedDecomposition <- function(bulk.eset,
     Y.pred <- Y.pred[,!indices,drop=F]
     sc.ref <- sc.ref[!indices,,drop=F]
   }
+  # limsolve nnls matrices and vectors
+  E <- base::matrix(1,nrow=n.cell.types, ncol=n.cell.types)
+  f <- base::rep(1, n.cell.types)
+  G <- base::diag(n.cell.types)
+  h <- base::rep(0, n.cell.types)
   results <- base::as.matrix(base::apply(Y.pred, 1,
                                          function(b) {
-                                           sol <- lsei::pnnls(sc.ref,
-                                                              b, sum=1)
-                                           return(base::append(sol$x,
-                                                               sol$rnorm))
+                                           sol <- limSolve::lsei(sc.ref, b,
+                                                                 E, f, G, h)
+                                           sol.p <- sol$X
+                                           sol.r <- base::sqrt(sol$solutionNorm)
+                                           return(base::append(sol.p, sol.r))
                                          }))
   base::rownames(results) <- base::append(base::colnames(sc.ref), "rnorm")
   base::colnames(results) <- sample.names
