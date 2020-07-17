@@ -4,8 +4,12 @@
 \alias{SeuratToExpressionSet}
 \title{Converts Seurat object to Expression Set}
 \usage{
-SeuratToExpressionSet(seurat.object, delimiter, position,
-  version = c("v2", "v3"))
+SeuratToExpressionSet(
+  seurat.object,
+  delimiter,
+  position,
+  version = c("v2", "v3")
+)
 }
 \arguments{
 \item{seurat.object}{Seurat object with attributes \emph{raw.data},

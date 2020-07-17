@@ -4,8 +4,18 @@
 \alias{GetCTP}
 \title{Return cell type proportions from bulk}
 \usage{
-GetCTP(bulk, cell_types, markers, ct_col, gene_col, min_gene, max_gene,
-  weighted, w_col, verbose)
+GetCTP(
+  bulk,
+  cell_types,
+  markers,
+  ct_col,
+  gene_col,
+  min_gene,
+  max_gene,
+  weighted,
+  w_col,
+  verbose
+)
 }
 \arguments{
 \item{bulk}{Expression Set containing bulk data}

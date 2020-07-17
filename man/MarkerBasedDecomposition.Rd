@@ -4,10 +4,18 @@
 \alias{MarkerBasedDecomposition}
 \title{Performs marker-based decomposition of bulk expression using marker genes}
 \usage{
-MarkerBasedDecomposition(bulk.eset, markers, ct_col = "cluster",
-  gene_col = "gene", min_gene = 5, max_gene = 200,
-  weighted = FALSE, w_col = "avg_logFC", unique_markers = TRUE,
-  verbose = TRUE)
+MarkerBasedDecomposition(
+  bulk.eset,
+  markers,
+  ct_col = "cluster",
+  gene_col = "gene",
+  min_gene = 5,
+  max_gene = 200,
+  weighted = FALSE,
+  w_col = "avg_logFC",
+  unique_markers = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{bulk.eset}{Expression Set. Normalized bulk expression data.}
