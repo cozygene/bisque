@@ -47,7 +47,8 @@ test_that("Catches single-cell data with only one or two subjects", {
   sc.pdata <- new("AnnotatedDataFrame", data=sc.pheno, varMetadata=sc.meta)
   sc.eset <- Biobase::ExpressionSet(assayData = sc.counts, phenoData = sc.pdata)
   expect_warning(BisqueRNA::ReferenceBasedDecomposition(bulk.eset, sc.eset,
-                                                        use.overlap=FALSE),
+                                                        use.overlap=FALSE,
+                                                        old.cpm=FALSE),
                  regexp="Only two individuals detected in single-cell data")
 })
 
