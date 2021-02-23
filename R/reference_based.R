@@ -178,6 +178,9 @@ SupervisedTransformBulk <- function(gene, Y.train, X.train, X.pred) {
 #' by the single-cell based reference and observed single-cell based cell
 #' proportions.
 #'
+#' 02/23/2021 - Github user @empircalbayes pointed out typo in shrink.scale
+#'              Changed denominator from n+1 to (n+1). Thanks @empiricalbayes!
+#'
 #' @param gene Character string. Gene name that corresponds to row in Y.train
 #' @param Y.train Numeric Matrix. Number of gene rows by number of overlapping
 #'   individuals columns. Contains weighted sum of reference profile by 
@@ -198,7 +201,7 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
   Y.scale <- base::attr(Y.train.scaled, "scaled:scale")
   n <- base::length(Y.train.scaled)
   # Shrinkage estimator that minimizes MSE for scaling factor
-  shrink.scale <- base::sqrt(base::sum((Y.train[gene,,drop=T]-Y.center)^2)/n+1)
+  shrink.scale <- base::sqrt(base::sum((Y.train[gene,,drop=T]-Y.center)^2)/(n+1))
   X.pred.scaled <- base::scale(X.pred[gene,,drop=T])
   Y.pred <- base::matrix((X.pred.scaled * shrink.scale) + Y.center,
                          dimnames=base::list(base::colnames(X.pred), gene))
