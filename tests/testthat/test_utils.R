@@ -8,17 +8,17 @@ test_that("CountsToCPM converts properly for valid data", {
   example.eset <- CountsToCPM(example.eset)
   expect_equal(unname(colSums(Biobase::exprs(example.eset))), rep(1000000, 3))
   # 3 by 1
-  example.counts <- matrix(1:9, nrow = 3, ncol = 1)
+  example.counts <- matrix(1:3, nrow = 3, ncol = 1)
   example.eset <- Biobase::ExpressionSet(assayData = example.counts)
   example.eset <- CountsToCPM(example.eset)
   expect_equal(unname(colSums(Biobase::exprs(example.eset))), rep(1000000, 1))
   # 1 by 3
-  example.counts <- matrix(1:9, nrow = 1, ncol = 3)
+  example.counts <- matrix(1:3, nrow = 1, ncol = 3)
   example.eset <- Biobase::ExpressionSet(assayData = example.counts)
   example.eset <- CountsToCPM(example.eset)
   expect_equal(unname(colSums(Biobase::exprs(example.eset))), rep(1000000, 3))
   # 1 by 1
-  example.counts <- matrix(1:9, nrow = 1, ncol = 1)
+  example.counts <- matrix(1, nrow = 1, ncol = 1)
   example.eset <- Biobase::ExpressionSet(assayData = example.counts)
   example.eset <- CountsToCPM(example.eset)
   expect_equal(unname(colSums(Biobase::exprs(example.eset))), rep(1000000, 1))
@@ -35,7 +35,7 @@ test_that("CountsToCPM catches invalid samples with no expression", {
   example.eset <- Biobase::ExpressionSet(assayData = example.counts)
   expect_error(CountsToCPM(example.eset))
   # 1 by 3
-  example.counts <- matrix(1:9, nrow = 1, ncol = 3)
+  example.counts <- matrix(1:3, nrow = 1, ncol = 3)
   example.counts[1,1] <- 0
   example.eset <- Biobase::ExpressionSet(assayData = example.counts)
   expect_error(CountsToCPM(example.eset))
@@ -55,7 +55,7 @@ test_that("FilterZeroVarianceGenes works", {
   example.eset <- Biobase::ExpressionSet(assayData = example.counts)
   expect_equal(2, unname(nrow(FilterZeroVarianceGenes(example.eset))))
   # If only one sample, should remove all genes
-  example.counts <- matrix(1:9, nrow = 3, ncol = 1)
+  example.counts <- matrix(1:3, nrow = 3, ncol = 1)
   example.eset <- Biobase::ExpressionSet(assayData = example.counts)
   expect_equal(0, unname(nrow(FilterZeroVarianceGenes(example.eset))))
   # If all have 0 variance, get rid of all genes
