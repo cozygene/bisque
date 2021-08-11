@@ -273,7 +273,7 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
 #' @export
 ReferenceBasedDecomposition <- function(bulk.eset,
                                         sc.eset,
-                                        signature,
+                                        signature=NULL,
                                         markers=NULL,
                                         cell.types="cellType",
                                         subject.names="SubjectName",
