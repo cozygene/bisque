@@ -10,7 +10,7 @@ SemisupervisedTransformBulk(gene, Y.train, X.pred)
 \item{gene}{Character string. Gene name that corresponds to row in Y.train}
 
 \item{Y.train}{Numeric Matrix. Number of gene rows by number of overlapping
-individuals columns. Contains weighted sum of reference profile by 
+individuals columns. Contains weighted sum of reference profile by
 single-cell based cell proportion estimates for each individual}
 
 \item{X.pred}{Numeric Matrix. Number of gene rows by number of remaining
@@ -27,4 +27,8 @@ For a specific gene, this function learns a transformation of
 the bulk expression to match the distribution produced
 by the single-cell based reference and observed single-cell based cell
 proportions.
+}
+\details{
+02/23/2021 - Github user @empircalbayes pointed out typo in shrink.scale
+             Changed denominator from n+1 to (n+1). Thanks @empiricalbayes!
 }
