@@ -42,7 +42,7 @@ GetOverlappingSamples <- function(sc.eset, bulk.eset, subject.names, verbose) {
 #' @param markers Character vector. List of relevant marker genes
 #' @param verbose Boolean. Print logging info
 #' @return overlapping.genes Character vector. List of genes found in markers
-#'   and both datasets. 
+#'   and both datasets.
 GetOverlappingGenes <- function(sc.eset, bulk.eset, markers, verbose) {
   bulk.genes <- Biobase::featureNames(bulk.eset)
   sc.genes <- Biobase::featureNames(sc.eset)
@@ -66,14 +66,14 @@ GetOverlappingGenes <- function(sc.eset, bulk.eset, markers, verbose) {
 
 #' Generate reference profile for cell types identified in single-cell data
 #'
-#' Averages expression within each cell type across all samples to use as 
+#' Averages expression within each cell type across all samples to use as
 #' reference profile.
 #'
 #' @param sc.eset Expression Set with single-cell data
 #' @param cell.types A character string. Name of phenoData attribute in sc.eset
 #'   that indicates cell type
 #' @return sc.ref Matrix. Reference profile with number of gene rows by number
-#'   of cell types columns. 
+#'   of cell types columns.
 #' @export
 GenerateSCReference <- function(sc.eset, cell.types) {
   cell.labels <- base::factor(sc.eset[[cell.types]])
@@ -92,11 +92,11 @@ GenerateSCReference <- function(sc.eset, cell.types) {
 #' in the single-cell Expression Set
 #'
 #' @param sc.eset Expression Set with single-cell data
-#' @param subject.names A character string. Name of phenoData attribute in 
+#' @param subject.names A character string. Name of phenoData attribute in
 #'   sc.eset that indicates individual ID.
 #' @param cell.types A character string. Name of phenoData attribute in sc.eset
 #'   that indicates cell type
-#' @return sc.props Matrix. Cell proportions with number of cell types rows 
+#' @return sc.props Matrix. Cell proportions with number of cell types rows
 #'   by number of individuals columns
 #' @export
 CalculateSCCellProportions <- function(sc.eset, subject.names, cell.types) {
@@ -119,12 +119,12 @@ CalculateSCCellProportions <- function(sc.eset, subject.names, cell.types) {
 #' proportions.
 #'
 #' If a linear transformation cannot be learned for a gene (zero variance in
-#' observed bulk or single-cell based weighted sums), a vector of NaNs will 
+#' observed bulk or single-cell based weighted sums), a vector of NaNs will
 #' be returned of the expected length (length of X.pred)
 #'
 #' @param gene Character string. Gene name that corresponds to row in Y.train
 #' @param Y.train Numeric Matrix. Number of gene rows by number of overlapping
-#'   individuals columns. Contains weighted sum of reference profile by 
+#'   individuals columns. Contains weighted sum of reference profile by
 #'   single-cell based cell proportion estimates for each individual
 #' @param X.train Numeric Matrix. Number of gene rows by number of overlapping
 #'   individuals columns. Contains observed bulk expression for each individual
@@ -151,7 +151,7 @@ SupervisedTransformBulk <- function(gene, Y.train, X.train, X.pred) {
     Y.pred <- base::matrix(X.pred[gene,,drop=T] * coeff,
                            dimnames=base::list(base::colnames(X.pred), gene))
   }
-  # If only one of X or Y has zero variance, return NaN. We shouldn't use this 
+  # If only one of X or Y has zero variance, return NaN. We shouldn't use this
   # gene for decomposition.
   else if (anyNA(X.train.scaled) || anyNA(Y.train.scaled)) {
     Y.pred <- base::matrix(X.pred[gene,,drop=T] * NaN,
@@ -183,7 +183,7 @@ SupervisedTransformBulk <- function(gene, Y.train, X.train, X.pred) {
 #'
 #' @param gene Character string. Gene name that corresponds to row in Y.train
 #' @param Y.train Numeric Matrix. Number of gene rows by number of overlapping
-#'   individuals columns. Contains weighted sum of reference profile by 
+#'   individuals columns. Contains weighted sum of reference profile by
 #'   single-cell based cell proportion estimates for each individual
 #' @param X.pred Numeric Matrix. Number of gene rows by number of remaining
 #'   individuals columns. Contains observed bulk expression for each individual
@@ -216,18 +216,20 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
 #' and performs  NNLS regression on these transformed values to estimate cell
 #' proportions.
 #'
-#' Expects read counts for both datasets, as they will be converted to 
+#' Expects read counts for both datasets, as they will be converted to
 #' counts per million (CPM). Two options available: Use overlapping indivudals
-#' found in both single-cell and bulk datasets to learn transformation or 
+#' found in both single-cell and bulk datasets to learn transformation or
 #' learn transformation from single-cell alone. The overlapping option is
-#' expected to have better performance. 
+#' expected to have better performance.
 #'
 #' @param bulk.eset Expression Set containin bulk data. No PhenoData required
-#'   but if overlapping option used, IDs returned by sampleNames(bulk.eset) 
+#'   but if overlapping option used, IDs returned by sampleNames(bulk.eset)
 #'   should match those found in sc.eset phenoData individual labels.
 #' @param sc.eset Expression Set containing single-cell data. PhenoData of this
 #'   Expression Set should contain cell type and individual labels for each
 #'   cell. Names of these fields specified by arguments below.
+#' @param signature OPTIONAL: A signature matrix. Rows are genes, columns are cell types. If
+#'   supplied, this one is used and no new one is calculated.
 #' @param markers Structure, such as character vector, containing marker genes
 #'   to be used in decomposition. `base::unique(base::unlist(markers))` should
 #'   return a simple vector containing each gene name. If no argument or NULL
@@ -236,7 +238,7 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
 #'   indicating cell type label for each cell
 #' @param subject.names Character string. Name of phenoData attribute in sc.eset
 #'   indicating individual label for each cell
-#' @param use.overlap Boolean. Whether to use and expect overlapping samples 
+#' @param use.overlap Boolean. Whether to use and expect overlapping samples
 #'   in decomposition.
 #' @param verbose Boolean. Whether to print log info during decomposition.
 #'   Errors will be printed regardless.
@@ -251,8 +253,8 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
 #'   each cell type.
 #' @return A list. Slot \strong{bulk.props} contains a matrix of cell type
 #'   proportion estimates with cell types as rows and individuals as columns.
-#'   Slot \strong{sc.props} contains a matrix of cell type proportions 
-#'   estimated directly from counting single-cell data. 
+#'   Slot \strong{sc.props} contains a matrix of cell type proportions
+#'   estimated directly from counting single-cell data.
 #'   Slot \strong{rnorm} contains Euclidean norm of the residuals for each
 #'   individual's proportion estimates. Slot \strong{genes.used} contains
 #'   vector of genes used in decomposition. Slot \strong{transformed.bulk}
@@ -267,17 +269,18 @@ SemisupervisedTransformBulk <- function(gene, Y.train, X.pred) {
 #' sim.data$sc.eset <- sim.data$sc.eset[,sim.data$sc.eset$SubjectName %in% as.character(6:10)]
 #' res <- ReferenceBasedDecomposition(sim.data$bulk.eset, sim.data$sc.eset)
 #' estimated.cell.proportions <- res$bulk.props
-#' 
+#'
 #' @export
 ReferenceBasedDecomposition <- function(bulk.eset,
                                         sc.eset,
+                                        signature,
                                         markers=NULL,
                                         cell.types="cellType",
                                         subject.names="SubjectName",
-                                        use.overlap=TRUE, 
+                                        use.overlap=TRUE,
                                         verbose=TRUE,
                                         old.cpm=TRUE) {
-  if ((! methods::is(sc.eset, "ExpressionSet")) || 
+  if ((! methods::is(sc.eset, "ExpressionSet")) ||
       (! methods::is(bulk.eset, "ExpressionSet"))) {
     base::stop("Expression data should be in ExpressionSet")
   }
@@ -322,10 +325,10 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   genes <- GetOverlappingGenes(sc.eset, bulk.eset, markers, verbose)
   if (old.cpm) {
     sc.eset <-
-      Biobase::ExpressionSet(assayData=Biobase::exprs(sc.eset)[genes,],
+      Biobase::ExpressionSet(assayData=Biobase::exprs(sc.eset)[genes,,drop=F],
                              phenoData=sc.eset@phenoData)
     bulk.eset <-
-      Biobase::ExpressionSet(assayData=Biobase::exprs(bulk.eset)[genes,],
+      Biobase::ExpressionSet(assayData=Biobase::exprs(bulk.eset)[genes,,drop=F],
                              phenoData=bulk.eset@phenoData)
   }
   if (verbose) {
@@ -335,7 +338,7 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   sc.eset <- CountsToCPM(sc.eset)
   if (!old.cpm) {
     sc.eset <-
-      Biobase::ExpressionSet(assayData=Biobase::exprs(sc.eset)[genes,],
+      Biobase::ExpressionSet(assayData=Biobase::exprs(sc.eset)[genes,,drop=F],
                              phenoData=sc.eset@phenoData)
   }
   sc.eset <- FilterZeroVarianceGenes(sc.eset, verbose)
@@ -346,12 +349,15 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   bulk.eset <- CountsToCPM(bulk.eset)
   if (!old.cpm) {
     bulk.eset <-
-      Biobase::ExpressionSet(assayData=Biobase::exprs(bulk.eset)[genes,],
+      Biobase::ExpressionSet(assayData=Biobase::exprs(bulk.eset)[genes,,drop=F],
                              phenoData=bulk.eset@phenoData)
   }
   bulk.eset <- FilterUnexpressedGenes(bulk.eset, verbose)
   genes <- base::intersect(Biobase::featureNames(sc.eset),
                            Biobase::featureNames(bulk.eset))
+  if (!is.null(signature)){
+    genes <- base::intersect(genes, rownames(signature))
+  }
   if (base::length(genes) == 0) {
     base::stop("Zero genes remaining after filtering and ",
                "intersecting bulk, single-cell, and marker genes.")
@@ -361,7 +367,11 @@ ReferenceBasedDecomposition <- function(bulk.eset,
     base::message("Generating single-cell based reference from ",
                   sprintf("%i cells.\n", n.cells))
   }
-  sc.ref <- GenerateSCReference(sc.eset, cell.types)[genes,,drop=F]
+  if (is.null(signature)){
+    sc.ref <- GenerateSCReference(sc.eset, cell.types)[genes,,drop=F]
+  } else {
+    sc_ref <- signature[genes,,drop=F]
+  }
   sc.props <- CalculateSCCellProportions(sc.eset, subject.names, cell.types)
   sc.props <- sc.props[base::colnames(sc.ref),,drop=F]
   if (use.overlap) {
@@ -412,7 +422,7 @@ ReferenceBasedDecomposition <- function(bulk.eset,
                            nrow=base::length(sample.names))
   }
   # Columns in Y.pred with NaN indicate transformation could not be learned
-  #   for that gene. 
+  #   for that gene.
   indices <- base::apply(Y.pred, MARGIN=2,
                          FUN=function(column) {base::anyNA(column)})
   if (base::any(indices)) {
@@ -444,7 +454,7 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   base::colnames(results) <- sample.names
   rnorm <- results["rnorm",,drop=T]
   base::names(rnorm) <- sample.names
-  Y.pred <- base::t(Y.pred) 
+  Y.pred <- base::t(Y.pred)
   base::rownames(Y.pred) <- base::rownames(sc.ref)
   base::colnames(Y.pred) <- sample.names
   results <- base::list(bulk.props=results[base::colnames(sc.ref),,drop=F],

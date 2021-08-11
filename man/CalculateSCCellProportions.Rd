@@ -9,14 +9,14 @@ CalculateSCCellProportions(sc.eset, subject.names, cell.types)
 \arguments{
 \item{sc.eset}{Expression Set with single-cell data}
 
-\item{subject.names}{A character string. Name of phenoData attribute in 
+\item{subject.names}{A character string. Name of phenoData attribute in
 sc.eset that indicates individual ID.}
 
 \item{cell.types}{A character string. Name of phenoData attribute in sc.eset
 that indicates cell type}
 }
 \value{
-sc.props Matrix. Cell proportions with number of cell types rows 
+sc.props Matrix. Cell proportions with number of cell types rows
   by number of individuals columns
 }
 \description{

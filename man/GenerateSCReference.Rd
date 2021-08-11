@@ -17,6 +17,6 @@ sc.ref Matrix. Reference profile with number of gene rows by number
   of cell types columns.
 }
 \description{
-Averages expression within each cell type across all samples to use as 
+Averages expression within each cell type across all samples to use as
 reference profile.
 }

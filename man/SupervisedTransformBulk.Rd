@@ -10,7 +10,7 @@ SupervisedTransformBulk(gene, Y.train, X.train, X.pred)
 \item{gene}{Character string. Gene name that corresponds to row in Y.train}
 
 \item{Y.train}{Numeric Matrix. Number of gene rows by number of overlapping
-individuals columns. Contains weighted sum of reference profile by 
+individuals columns. Contains weighted sum of reference profile by
 single-cell based cell proportion estimates for each individual}
 
 \item{X.train}{Numeric Matrix. Number of gene rows by number of overlapping
@@ -33,6 +33,6 @@ proportions.
 }
 \details{
 If a linear transformation cannot be learned for a gene (zero variance in
-observed bulk or single-cell based weighted sums), a vector of NaNs will 
+observed bulk or single-cell based weighted sums), a vector of NaNs will
 be returned of the expected length (length of X.pred)
 }

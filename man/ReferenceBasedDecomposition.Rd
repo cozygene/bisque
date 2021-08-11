@@ -8,6 +8,7 @@ data}
 ReferenceBasedDecomposition(
   bulk.eset,
   sc.eset,
+  signature,
   markers = NULL,
   cell.types = "cellType",
   subject.names = "SubjectName",
@@ -18,12 +19,15 @@ ReferenceBasedDecomposition(
 }
 \arguments{
 \item{bulk.eset}{Expression Set containin bulk data. No PhenoData required
-but if overlapping option used, IDs returned by sampleNames(bulk.eset) 
+but if overlapping option used, IDs returned by sampleNames(bulk.eset)
 should match those found in sc.eset phenoData individual labels.}
 
 \item{sc.eset}{Expression Set containing single-cell data. PhenoData of this
 Expression Set should contain cell type and individual labels for each
 cell. Names of these fields specified by arguments below.}
+
+\item{signature}{OPTIONAL: A signature matrix. Rows are genes, columns are cell types. If
+supplied, this one is used and no new one is calculated.}
 
 \item{markers}{Structure, such as character vector, containing marker genes
 to be used in decomposition. `base::unique(base::unlist(markers))` should
@@ -36,7 +40,7 @@ indicating cell type label for each cell}
 \item{subject.names}{Character string. Name of phenoData attribute in sc.eset
 indicating individual label for each cell}
 
-\item{use.overlap}{Boolean. Whether to use and expect overlapping samples 
+\item{use.overlap}{Boolean. Whether to use and expect overlapping samples
 in decomposition.}
 
 \item{verbose}{Boolean. Whether to print log info during decomposition.
@@ -55,8 +59,8 @@ each cell type.}
 \value{
 A list. Slot \strong{bulk.props} contains a matrix of cell type
   proportion estimates with cell types as rows and individuals as columns.
-  Slot \strong{sc.props} contains a matrix of cell type proportions 
-  estimated directly from counting single-cell data. 
+  Slot \strong{sc.props} contains a matrix of cell type proportions
+  estimated directly from counting single-cell data.
   Slot \strong{rnorm} contains Euclidean norm of the residuals for each
   individual's proportion estimates. Slot \strong{genes.used} contains
   vector of genes used in decomposition. Slot \strong{transformed.bulk}
@@ -71,9 +75,9 @@ and performs  NNLS regression on these transformed values to estimate cell
 proportions.
 }
 \details{
-Expects read counts for both datasets, as they will be converted to 
+Expects read counts for both datasets, as they will be converted to
 counts per million (CPM). Two options available: Use overlapping indivudals
-found in both single-cell and bulk datasets to learn transformation or 
+found in both single-cell and bulk datasets to learn transformation or
 learn transformation from single-cell alone. The overlapping option is
 expected to have better performance.
 }
