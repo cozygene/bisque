@@ -370,7 +370,7 @@ ReferenceBasedDecomposition <- function(bulk.eset,
   if (is.null(signature)){
     sc.ref <- GenerateSCReference(sc.eset, cell.types)[genes,,drop=F]
   } else {
-    sc_ref <- signature[genes,,drop=F]
+    sc.ref <- signature[genes,,drop=F]
   }
   sc.props <- CalculateSCCellProportions(sc.eset, subject.names, cell.types)
   sc.props <- sc.props[base::colnames(sc.ref),,drop=F]
