@@ -20,7 +20,7 @@ RoxygenNote: 7.0.2
 biocViews:
 Imports:
   Biobase,
-  limSolve,
+  lsei,
   methods,
   stats
 Suggests:

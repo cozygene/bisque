@@ -157,4 +157,40 @@ test_that("Catches data where zero variance in training data", {
   sc.counts[c(2,3), 2] <- c(3,2)
   sc.eset <- Biobase::ExpressionSet(assayData = sc.counts, phenoData = sc.pdata)
   expect_equal(BisqueRNA::ReferenceBasedDecomposition(bulk.eset, sc.eset)$genes.used, c("1","2", "3"))
-  })
+})
+
+test_that("Output is as expected for toy example", {
+  bulk.counts <- matrix(1:30,nrow=10,ncol=3)
+  sc.counts <- matrix(30:1, nrow=10,ncol=3)
+  colnames(bulk.counts) <- c("a", "b", "c")
+  bulk.eset <- Biobase::ExpressionSet(assayData = bulk.counts)
+  sc.pheno <- data.frame(SubjectName=c('b', 'c', 'd'), cellType=c('a', 'b', 'c'))
+  sc.meta <- data.frame(labelDescription=c("SubjectName", "cellType"),
+                        row.names=c("SubjectName", "cellType"))
+  sc.pdata <- new("AnnotatedDataFrame", data=sc.pheno, varMetadata=sc.meta)
+  sc.eset <- Biobase::ExpressionSet(assayData = sc.counts, phenoData = sc.pdata)
+  result <- BisqueRNA::ReferenceBasedDecomposition(bulk.eset, sc.eset, use.overlap=F)
+  expected.bulk.props <- matrix(c(1, 0.2285130, 0.1420361,
+                                  0, 0.2758975, 0.2285130,
+                                  0, 0.4955895, 0.6294509),
+                                nrow=3, ncol=3, byrow = TRUE)
+  colnames(expected.bulk.props) <- c("a", "b", "c")
+  rownames(expected.bulk.props) <- c("a", "b", "c")
+  expected.transformed.bulk <- matrix(c(115265.46, 152590.74, 160641.30,
+                                        111873.13, 140903.91, 147165.45,
+                                        108480.81, 129217.08, 133689.61,
+                                        105088.49, 117530.25, 120213.77,
+                                        101696.16, 105843.42, 106737.92,
+                                        98303.84,  94156.58,  93262.08,
+                                        94911.51,  82469.75,  79786.23,
+                                        91519.19,  70782.92,  66310.39,
+                                        88126.87,  59096.09,  52834.55,
+                                        84734.54,  47409.26,  39358.70),
+                                      nrow=10, ncol=3, byrow = TRUE)
+  colnames(expected.transformed.bulk) <- c("a", "b", "c")
+  rownames(expected.transformed.bulk) <- c(1:10)
+  expected.rnorm <- c(4.807100e+03, 1.113007e-10, 1.234771e-10)
+  testthat::expect_equal(expected.bulk.props, result$bulk.props, check.attributes=FALSE, tolerance=1e-6)
+  testthat::expect_equal(expected.transformed.bulk, result$transformed.bulk, check.attributes=FALSE, tolerance=1e-6)
+  testthat::expect_equal(expected.rnorm, result$rnorm, check.attributes=FALSE, tolerance=1e-6)
+})
